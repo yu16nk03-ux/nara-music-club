@@ -1,208 +1,121 @@
-/* ===== Nara Music Club ===== */
+/* 全体 */
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
+* {
+    box-sizing: border-box;
+    }
+
+body {
+margin: 0;
+font-family: “Noto Sans JP”, sans-serif;
+line-height: 1.8;
+color: #333;
+background: #fafafa;
 }
 
-html{
-  scroll-behavior:smooth;
+/* ヘッダー */
+header {
+background: linear-gradient(135deg, #6a11cb, #2575fc);
+color: white;
+text-align: center;
+padding: 60px 20px;
 }
 
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;
-  background:#F8F6F1;
-  color:#333;
-  line-height:1.8;
+header h1 {
+margin: 0;
+font-size: 2.2rem;
 }
 
-img{
-  max-width:100%;
-  display:block;
+header p {
+margin-top: 10px;
+font-size: 1.1rem;
 }
 
-a{
-  text-decoration:none;
-  color:inherit;
+/* ナビ */
+nav {
+display: flex;
+justify-content: center;
+gap: 20px;
+flex-wrap: wrap;
+background: white;
+padding: 15px;
+position: sticky;
+top: 0;
+box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.container{
-  width:min(1100px,92%);
-  margin:auto;
+nav a {
+text-decoration: none;
+color: #2575fc;
+font-weight: bold;
 }
 
-/* ---------- Header ---------- */
-
-header{
-  position:fixed;
-  top:0;
-  width:100%;
-  z-index:1000;
-  background:rgba(248,246,241,.92);
-  backdrop-filter:blur(10px);
-  border-bottom:1px solid #e7e2d8;
+/* セクション */
+main {
+max-width: 900px;
+margin: auto;
+padding: 20px;
 }
 
-nav{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:16px 0;
+section {
+background: white;
+margin: 30px 0;
+padding: 30px;
+border-radius: 15px;
+box-shadow: 0 5px 15px rgba(0,0,0,0.08);
 }
 
-.logo{
-  display:flex;
-  align-items:center;
-  gap:12px;
+h2 {
+color: #2575fc;
+border-left: 5px solid #2575fc;
+padding-left: 10px;
 }
 
-.logo img{
-  width:56px;
-  height:56px;
-  border-radius:50%;
+/* リスト */
+ul {
+padding-left: 20px;
 }
 
-.logo h1{
-  font-size:22px;
+/* ボタン */
+button {
+background: #2575fc;
+color: white;
+border: none;
+padding: 12px 25px;
+border-radius: 30px;
+font-size: 1rem;
+cursor: pointer;
 }
 
-/* ---------- Hero ---------- */
-
-.hero{
-  padding-top:100px;
-  min-height:100vh;
-  display:flex;
-  align-items:center;
+button:hover {
+background: #1255c7;
 }
 
-.hero-grid{
-  display:grid;
-  gap:40px;
-  grid-template-columns:1fr 1fr;
-  align-items:center;
+/* フッター */
+footer {
+text-align: center;
+background: #333;
+color: white;
+padding: 20px;
+margin-top: 40px;
 }
 
-.hero h2{
-  font-size:54px;
-  line-height:1.2;
-  margin-bottom:20px;
+/* スマホ対応 */
+@media (max-width: 600px) {
+
+header {
+padding: 40px 15px;
 }
 
-.hero p{
-  font-size:20px;
-  color:#666;
-  margin-bottom:30px;
+header h1 {
+font-size: 1.7rem;
 }
 
-.hero img{
-  border-radius:24px;
-  box-shadow:0 20px 50px rgba(0,0,0,.15);
+section {
+padding: 20px;
 }
 
-/* ---------- Button ---------- */
-
-.btn{
-  display:inline-block;
-  padding:16px 30px;
-  background:#343434;
-  color:white;
-  border-radius:999px;
-  transition:.3s;
-}
-
-.btn:hover{
-  background:#111;
-  transform:translateY(-2px);
-}
-
-/* ---------- Sections ---------- */
-
-section{
-  padding:90px 0;
-}
-
-.section-title{
-  text-align:center;
-  font-size:38px;
-  margin-bottom:50px;
-}
-
-/* ---------- Cards ---------- */
-
-.cards{
-  display:grid;
-  gap:25px;
-  grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-}
-
-.card{
-  background:white;
-  padding:30px;
-  border-radius:20px;
-  box-shadow:0 10px 25px rgba(0,0,0,.08);
-}
-
-.card h3{
-  margin-bottom:12px;
-}
-
-/* ---------- Gallery ---------- */
-
-.gallery{
-  display:grid;
-  gap:20px;
-  grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-}
-
-.gallery img{
-  border-radius:20px;
-}
-
-/* ---------- Footer ---------- */
-
-footer{
-  background:#2F2F2F;
-  color:white;
-  text-align:center;
-  padding:40px 20px;
-}
-
-/* ---------- Animation ---------- */
-
-.fade{
-  opacity:0;
-  transform:translateY(40px);
-  transition:1s;
-}
-
-.fade.show{
-  opacity:1;
-  transform:none;
-}
-
-/* ---------- Mobile ---------- */
-
-@media(max-width:768px){
-
-.hero-grid{
-grid-template-columns:1fr;
-}
-
-.hero h2{
-font-size:38px;
-}
-
-.hero p{
-font-size:18px;
-}
-
-.logo h1{
-font-size:18px;
-}
-
-.section-title{
-font-size:30px;
+nav {
+gap: 10px;
 }
 
 }
