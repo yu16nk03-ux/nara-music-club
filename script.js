@@ -1,1 +1,11 @@
-console.log('v2');
+const menuButton=document.querySelector('.menu-toggle');
+const nav=document.querySelector('.nav');
+menuButton?.addEventListener('click',()=>{const open=nav.classList.toggle('is-open');menuButton.setAttribute('aria-expanded',String(open));menuButton.setAttribute('aria-label',open?'メニューを閉じる':'メニューを開く')});
+document.querySelectorAll('.nav a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('is-open');menuButton?.setAttribute('aria-expanded','false')}));
+const lightbox=document.querySelector('.lightbox');
+const lightboxImg=lightbox?.querySelector('img');
+const closeLightbox=()=>{lightbox?.classList.remove('is-open');lightbox?.setAttribute('aria-hidden','true');if(lightboxImg)lightboxImg.src='';document.body.style.overflow=''};
+document.querySelectorAll('.gallery-item').forEach(item=>item.addEventListener('click',()=>{if(!lightbox||!lightboxImg)return;lightboxImg.src=item.dataset.image;lightbox.classList.add('is-open');lightbox.setAttribute('aria-hidden','false');document.body.style.overflow='hidden'}));
+lightbox?.querySelector('.lightbox-close')?.addEventListener('click',closeLightbox);
+lightbox?.addEventListener('click',e=>{if(e.target===lightbox)closeLightbox()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLightbox()});
