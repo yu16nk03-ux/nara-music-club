@@ -20,3 +20,7 @@ https://www.instagram.com/nmc_official_2026/
 
 ## 注意
 `member/` は現時点では「入口ページ」です。GitHub Pagesだけでは安全な会員限定認証はできないため、実際の会員情報をここへ直接置かないでください。Notion等を使った会員管理・認証方式を決めた段階で接続します。
+
+
+## v3.2
+活動記録に写真・活動メモ・YouTube限定公開動画を追加しました。Supabaseで `NMC-v3.2-Supabase-activity.sql` を実行してください。
