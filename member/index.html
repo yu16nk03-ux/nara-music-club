@@ -3,16 +3,32 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>NMC MEMBER | LINEログイン</title>
+<title>NMC MEMBER | メンバーページ</title>
 <link rel="stylesheet" href="../style.css">
 <style>
-.member-login{max-width:560px;margin:0 auto;padding:56px 20px 80px;text-align:center}
+.member-login{max-width:760px;margin:0 auto;padding:56px 20px 80px;text-align:center}
 .member-badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#f1e4cf;letter-spacing:.12em;font-size:12px}
 .member-login h1{margin:18px 0 12px}.member-login p{line-height:1.9;color:#555}
 .line-login{display:block;width:100%;margin:28px auto 14px;padding:15px 18px;border:0;border-radius:10px;background:#06c755;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-.line-login:disabled{opacity:.55}.login-note{font-size:12px;color:#777}.member-status{margin-top:24px;padding:16px;border-radius:10px;background:#faf7f1;display:none;line-height:1.8}.member-status.error{background:#fff0ee}.back-link{display:inline-block;margin-top:24px}
-.member-home{display:none;text-align:left;margin-top:28px}.member-card{background:#fff;border:1px solid #e8e0d6;border-radius:16px;padding:22px;margin-bottom:16px}.member-card h2{margin:0 0 12px;font-size:18px}.member-card p{margin:0;line-height:1.8}.logout{margin-top:18px;padding:12px 18px;border:1px solid #ddd;background:#fff;border-radius:10px}
-.song-card{margin-top:16px;padding:15px;border:1px solid #e8e0d6;border-radius:13px;background:#faf8f4}.song-title{font-weight:800;font-size:16px}.song-artist{font-size:12px;color:#777;margin:3px 0 12px}.part-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.part-option input{position:absolute;opacity:0}.part-option label{display:block;text-align:center;padding:9px 4px;border:1px solid #ddd5ca;border-radius:9px;background:#fff;font-size:12px;cursor:pointer}.part-option input:checked+label{background:#eee4d2;border-color:#cdbb9b;font-weight:800}.hope-list{margin-top:12px;padding-top:10px;border-top:1px solid #e8e0d6}.hope-title{font-size:11px;color:#777;font-weight:700}.hope-line{font-size:12px;line-height:1.7;color:#59636a}.save-button{width:100%;margin-top:15px;padding:12px;border:0;border-radius:10px;background:#667b6d;color:#fff;font-weight:700}.save-button:disabled{opacity:.6}.deadline-note{margin-top:9px;font-size:11px;color:#8a7662}
+.line-login:disabled{opacity:.55}.login-note{font-size:12px;color:#777}.member-status{margin-top:24px;padding:16px;border-radius:10px;background:#faf7f1;display:none;line-height:1.8}.member-status.error{background:#fff0ee}
+.back-link{display:inline-block;margin-top:24px}.member-home{display:none;text-align:left;margin-top:28px}
+.member-card{background:#fff;border:1px solid #e8e0d6;border-radius:16px;padding:22px;margin-bottom:16px}
+.member-card h2{margin:0 0 12px;font-size:18px}.member-card p{margin:0;line-height:1.8}
+.logout{margin-top:18px;padding:12px 18px;border:1px solid #ddd;background:#fff;border-radius:10px}
+.session-switch{display:flex;gap:8px;overflow:auto;padding:2px 2px 10px;margin:12px 0}
+.session-button{flex:0 0 auto;border:1px solid #ddd5ca;border-radius:999px;background:#fff;padding:10px 14px;font-weight:700;color:#59636a}
+.session-button.active{background:#e9dfcf;border-color:#cdbb9b;color:#3d4d47}
+.session-meta{font-size:12px;color:#777;margin:0 0 12px}
+.session-message{padding:13px;border-radius:11px;background:#faf7f1;color:#665f57;line-height:1.7}
+.song-card{margin-top:16px;padding:15px;border:1px solid #e8e0d6;border-radius:13px;background:#faf8f4}
+.song-title{font-weight:800;font-size:16px}.song-artist{font-size:12px;color:#777;margin:3px 0 12px}
+.part-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.part-option input{position:absolute;opacity:0}
+.part-option label{display:block;text-align:center;padding:10px 4px;border:1px solid #ddd5ca;border-radius:9px;background:#fff;font-size:12px;cursor:pointer}
+.part-option input:checked+label{background:#eee4d2;border-color:#cdbb9b;font-weight:800}
+.hope-list{margin-top:12px;padding-top:10px;border-top:1px solid #e8e0d6}.hope-title{font-size:11px;color:#777;font-weight:700}
+.hope-line{font-size:12px;line-height:1.7;color:#59636a}.save-button{width:100%;margin-top:15px;padding:12px;border:0;border-radius:10px;background:#667b6d;color:#fff;font-weight:700}
+.save-button:disabled{opacity:.6}.deadline-note{margin-top:9px;font-size:11px;color:#8a7662}
+@media(max-width:420px){.member-login{padding-left:14px;padding-right:14px}}
 </style>
 </head>
 <body>
@@ -23,16 +39,25 @@
 <button id="lineLogin" class="line-login" type="button">LINEでログイン</button>
 <div class="login-note">初回ログイン後、運営による承認が必要です。</div>
 <div id="status" class="member-status"></div>
+
 <section id="memberHome" class="member-home">
-  <div class="member-card"><h2>こんにちは、<span id="displayName">メンバー</span>さん。</h2><p>ログインできました。NMC MEMBERへようこそ。</p></div>
-  <div class="member-card"><h2>次回の活動</h2><p>決まり次第お知らせします。</p></div>
   <div class="member-card">
-    <h2>🎵 課題曲・パート希望</h2>
-    <p>やりたい曲とパートを選んでください。複数の曲・複数のパートを選べます。ほかのメンバーと同じパートでも大丈夫です。</p>
-    <div id="songList"></div>
-    <div id="songStatus" class="member-status"></div>
+    <h2>こんにちは、<span id="displayName">メンバー</span>さん。</h2>
+    <p>ログインできました。NMC MEMBERへようこそ。</p>
   </div>
-  <div class="member-card"><h2>活動記録</h2><p><a href="./activity/">これまでの活動を見る</a></p></div>
+
+  <div class="member-card">
+    <h2>📅 セッションを選ぶ</h2>
+    <p>セッションごとに課題曲と希望パートを登録できます。先のセッションも、曲が決まっていれば先に選択できます。</p>
+    <div id="sessionSwitch" class="session-switch"></div>
+    <div id="sessionMeta" class="session-meta"></div>
+    <div id="sessionContent"></div>
+  </div>
+
+  <div class="member-card">
+    <h2>活動記録</h2>
+    <p><a href="./activity/">これまでの活動を見る</a></p>
+  </div>
   <button id="logout" class="logout" type="button">ログアウト</button>
   <div id="adminLink" style="display:none;margin-top:16px;text-align:center"><a href="../admin/">⚙️ 運営管理画面</a></div>
 </section>
@@ -45,38 +70,99 @@
   const SUPABASE_URL="https://rxkofbwiejzizpxmhqhq.supabase.co";
   const SUPABASE_PUBLISHABLE_KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
   const REDIRECT_URL="https://yu16nk03-ux.github.io/nara-music-club/member/";
+  const PARTS=["ボーカル","ドラム","ベース","バッキングギター","リードギター","キーボード"];
   const statusEl=document.getElementById("status");
   const loginBtn=document.getElementById("lineLogin");
   const homeEl=document.getElementById("memberHome");
   const nameEl=document.getElementById("displayName");
   const noteEl=document.querySelector(".login-note");
-  function showStatus(message,error){statusEl.textContent=message;statusEl.className="member-status"+(error?" error":"");statusEl.style.display="block";}
-  function showLogin(){loginBtn.style.display="block";noteEl.style.display="block";homeEl.style.display="none";}
-  function showHome(name){loginBtn.style.display="none";noteEl.style.display="none";statusEl.style.display="none";nameEl.textContent=name||"メンバー";homeEl.style.display="block";}
-  if(!window.supabase||!window.supabase.createClient){showStatus("ログイン機能を読み込めませんでした。ページを再読み込みしてください。",true);return;}
   const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
-  const SONGS=[
-    {id:"shishamo",title:"僕に彼女ができたんだ",artist:"SHISHAMO"},
-    {id:"radwimps",title:"セプテンバーさん",artist:"RADWIMPS"},
-    {id:"humpback",title:"拝啓、少年よ",artist:"Hump Back"}
-  ];
-  const PARTS=["ボーカル","ドラム","ベース","バッキングギター","リードギター","キーボード"];
+  let currentUser=null, sessions=[], sessionSongs=[], songs=[], selectedSessionId=null;
 
-  async function loadSongChoices(user){
-    const list=document.getElementById("songList");
-    const msg=document.getElementById("songStatus");
-    list.innerHTML="";
-    msg.style.display="none";
+  function showStatus(message,error){
+    statusEl.textContent=message;
+    statusEl.className="member-status"+(error?" error":"");
+    statusEl.style.display="block";
+  }
+  function showLogin(){
+    loginBtn.style.display="block"; noteEl.style.display="block"; homeEl.style.display="none";
+  }
+  function showHome(name){
+    loginBtn.style.display="none"; noteEl.style.display="none"; statusEl.style.display="none";
+    nameEl.textContent=name||"メンバー"; homeEl.style.display="block";
+  }
+  function formatDate(date){
+    if(!date) return "開催日未定";
+    const d=new Date(date+"T00:00:00");
+    return `${d.getMonth()+1}月${d.getDate()}日`;
+  }
+  function isClosed(session){
+    if(!session.session_date) return false;
+    const cutoff=new Date(session.session_date+"T00:00:00");
+    cutoff.setDate(cutoff.getDate()-1);
+    cutoff.setHours(23,59,59,999);
+    return new Date() > cutoff;
+  }
+  function sessionLabel(s){
+    return `${s.name}${s.session_date?"（"+formatDate(s.session_date)+"）":""}`;
+  }
 
-    const mine=await client.from("part_requests").select("song_id,part").eq("user_id",user.id);
-    if(mine.error){
-      msg.textContent="課題曲・パート希望のデータベース設定がまだ必要です。付属のSQLをSupabaseで実行してください。";
-      msg.className="member-status error";
-      msg.style.display="block";
+  async function loadSessionData(){
+    const [sr,ssr,sngr]=await Promise.all([
+      client.from("sessions").select("id,name,session_date").order("session_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true}),
+      client.from("session_songs").select("session_id,song_id"),
+      client.from("songs").select("id,title,artist").order("created_at",{ascending:true})
+    ]);
+    if(sr.error||ssr.error||sngr.error){
+      showStatus("セッション情報を読み込めませんでした。Supabaseの設定を確認してください。",true);
+      return;
     }
-    const selected=new Set((mine.data||[]).map(x=>x.song_id+"::"+x.part));
+    sessions=sr.data||[]; sessionSongs=ssr.data||[]; songs=sngr.data||[];
+    if(!selectedSessionId || !sessions.some(s=>s.id===selectedSessionId)) selectedSessionId=sessions[0]?.id||null;
+    renderSessionButtons();
+    if(selectedSessionId) await renderSession(selectedSessionId);
+    else document.getElementById("sessionContent").innerHTML='<div class="session-message">現在、セッションは登録されていません。</div>';
+  }
 
-    const everyone=await client.from("part_requests").select("song_id,part,display_name");
+  function renderSessionButtons(){
+    const box=document.getElementById("sessionSwitch");
+    box.innerHTML="";
+    sessions.forEach(s=>{
+      const b=document.createElement("button");
+      b.type="button"; b.className="session-button"+(s.id===selectedSessionId?" active":"");
+      b.textContent=s.name;
+      b.onclick=async()=>{selectedSessionId=s.id;renderSessionButtons();await renderSession(s.id)};
+      box.appendChild(b);
+    });
+  }
+
+  async function renderSession(sessionId){
+    const session=sessions.find(s=>s.id===sessionId);
+    const meta=document.getElementById("sessionMeta");
+    const content=document.getElementById("sessionContent");
+    if(!session){content.innerHTML="";return;}
+    meta.textContent=session.session_date
+      ? `開催日：${formatDate(session.session_date)}${isClosed(session)?"　｜　回答受付終了":""}`
+      : "開催日は未定です。";
+    content.innerHTML="読み込み中…";
+
+    const ids=sessionSongs.filter(x=>x.session_id===sessionId).map(x=>x.song_id);
+    const currentSongs=songs.filter(s=>ids.includes(s.id));
+    if(!currentSongs.length){
+      content.innerHTML='<div class="session-message">このセッションの課題曲はまだ登録されていません。運営が曲を設定すると、ここから希望パートを選べます。</div>';
+      return;
+    }
+
+    const [mine,everyone]=await Promise.all([
+      client.from("part_requests").select("song_id,part").eq("user_id",currentUser.id).eq("session_id",sessionId),
+      client.from("part_requests").select("song_id,part,display_name").eq("session_id",sessionId)
+    ]);
+    if(mine.error||everyone.error){
+      content.innerHTML='<div class="session-message">希望パートを読み込めませんでした。Supabaseの設定を確認してください。</div>';
+      return;
+    }
+
+    const selected=new Set((mine.data||[]).map(x=>x.song_id+"::"+x.part));
     const map={};
     (everyone.data||[]).forEach(x=>{
       const k=x.song_id+"::"+x.part;
@@ -84,7 +170,9 @@
       map[k].push(x.display_name||"メンバー");
     });
 
-    SONGS.forEach(song=>{
+    const closed=isClosed(session);
+    const wrap=document.createElement("div");
+    currentSongs.forEach(song=>{
       const card=document.createElement("div");
       card.className="song-card";
       card.innerHTML='<div class="song-title"></div><div class="song-artist"></div><div class="part-grid"></div><div class="hope-list"><div class="hope-title">現在の希望者</div><div class="hope-lines"></div></div>';
@@ -94,87 +182,82 @@
       const lines=card.querySelector(".hope-lines");
 
       PARTS.forEach((part,i)=>{
-        const wrap=document.createElement("div");
-        wrap.className="part-option";
+        const wrapPart=document.createElement("div");
+        wrapPart.className="part-option";
         const input=document.createElement("input");
-        input.type="checkbox";
-        input.id="p-"+song.id+"-"+i;
-        input.dataset.song=song.id;
-        input.dataset.part=part;
-        input.checked=selected.has(song.id+"::"+part);
+        input.type="checkbox"; input.id="p-"+sessionId+"-"+song.id+"-"+i;
+        input.dataset.song=song.id; input.dataset.part=part;
+        input.checked=selected.has(song.id+"::"+part); input.disabled=closed;
         const label=document.createElement("label");
-        label.htmlFor=input.id;
-        label.textContent=part;
-        wrap.append(input,label);
-        grid.appendChild(wrap);
+        label.htmlFor=input.id; label.textContent=part;
+        wrapPart.append(input,label); grid.appendChild(wrapPart);
 
         const names=map[song.id+"::"+part]||[];
         if(names.length){
           const line=document.createElement("div");
-          line.className="hope-line";
-          line.textContent=part+"： "+names.join("、");
+          line.className="hope-line"; line.textContent=part+"： "+names.join("、");
           lines.appendChild(line);
         }
       });
-      list.appendChild(card);
+      wrap.appendChild(card);
     });
 
-    const save=document.createElement("button");
-    save.className="save-button";
-    save.textContent="希望パートを保存する";
-    list.appendChild(save);
-
-    const note=document.createElement("div");
-    note.className="deadline-note";
-    note.textContent="回答は前日まで変更できます。パートは確定せず「希望者」として共有します。";
-    list.appendChild(note);
-
-    save.onclick=async()=>{
-      save.disabled=true;
-      save.textContent="保存しています…";
-      try{
-        const checked=[...document.querySelectorAll("#songList input[type=checkbox]:checked")];
-        const rows=checked.map(i=>({
-          user_id:user.id,
-          song_id:i.dataset.song,
-          part:i.dataset.part,
-          display_name:nameEl.textContent
-        }));
-        let r=await client.from("part_requests").delete().eq("user_id",user.id);
-        if(r.error) throw r.error;
-        if(rows.length){
-          r=await client.from("part_requests").insert(rows);
+    if(closed){
+      const msg=document.createElement("div");
+      msg.className="session-message"; msg.style.marginTop="12px";
+      msg.textContent="このセッションは回答受付終了です。現在の希望者を確認できます。";
+      wrap.appendChild(msg);
+    }else{
+      const save=document.createElement("button");
+      save.className="save-button"; save.textContent="このセッションの希望パートを保存する";
+      save.onclick=async()=>{
+        save.disabled=true; save.textContent="保存しています…";
+        try{
+          const checked=[...wrap.querySelectorAll('input[type="checkbox"]:checked')];
+          const rows=checked.map(i=>({
+            user_id:currentUser.id, session_id:sessionId, song_id:i.dataset.song,
+            part:i.dataset.part, display_name:nameEl.textContent
+          }));
+          let r=await client.from("part_requests").delete().eq("user_id",currentUser.id).eq("session_id",sessionId);
           if(r.error) throw r.error;
+          if(rows.length){
+            r=await client.from("part_requests").insert(rows);
+            if(r.error) throw r.error;
+          }
+          await renderSession(sessionId);
+          const ok=document.createElement("div");
+          ok.className="member-status"; ok.style.display="block"; ok.textContent="このセッションの希望パートを保存しました！🎸";
+          content.prepend(ok);
+        }catch(e){
+          console.error(e);
+          alert("保存できませんでした。Supabaseの設定を確認してください。");
+          save.disabled=false; save.textContent="このセッションの希望パートを保存する";
         }
-        msg.textContent="希望パートを保存しました！🎸";
-        msg.className="member-status";
-        msg.style.display="block";
-        await loadSongChoices(user);
-      }catch(e){
-        console.error(e);
-        msg.textContent="保存できませんでした。Supabaseの設定を確認してください。";
-        msg.className="member-status error";
-        msg.style.display="block";
-      }finally{
-        save.disabled=false;
-        save.textContent="希望パートを保存する";
-      }
-    };
+      };
+      wrap.appendChild(save);
+      const note=document.createElement("div");
+      note.className="deadline-note";
+      note.textContent=session.session_date
+        ? "回答は前日まで変更できます。パートは確定せず「希望者」として共有します。"
+        : "開催日が未定のため、現在は回答を変更できます。";
+      wrap.appendChild(note);
+    }
+    content.innerHTML=""; content.appendChild(wrap);
   }
 
   async function checkMember(){
     const {data,error}=await client.auth.getUser();
-    if(error){showLogin();return;}
-    const user=data.user;
-    if(!user){showLogin();return;}
-    const result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",user.id).maybeSingle();
+    if(error||!data.user){showLogin();return;}
+    currentUser=data.user;
+    const result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",currentUser.id).maybeSingle();
     if(result.error){showStatus("ログインはできましたが、会員情報を確認できませんでした。",true);return;}
     if(!result.data){showStatus("ログインできました。現在、NMC運営で会員登録を確認しています。",false);return;}
     if(result.data.approved!==true){showStatus("現在、参加承認待ちです。運営が確認後、会員ページをご利用いただけます。",false);return;}
     showHome(result.data.display_name);
     if(result.data.is_admin===true) document.getElementById("adminLink").style.display="block";
-    await loadSongChoices(user);
+    await loadSessionData();
   }
+
   loginBtn.addEventListener("click",async function(){
     loginBtn.disabled=true;showStatus("LINEへ移動します…",false);
     try{
