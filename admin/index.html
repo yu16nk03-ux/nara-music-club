@@ -36,6 +36,7 @@ input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-ra
 <button class="tab" data-tab="requests">🎵 パート希望</button>
 <button class="tab" data-tab="songs">🎼 課題曲管理</button>
 <button class="tab" data-tab="sessions">📅 セッション管理</button>
+<button class="tab" data-tab="day">🎸 当日運営</button>
 </div>
 
 <section id="members" class="panel active">
@@ -71,6 +72,15 @@ input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-ra
 <button class="save" type="submit">セッションを作成する</button>
 </form>
 <div id="sessionAdminList"></div>
+</section>
+
+<section id="day" class="panel">
+<h2>🎸 当日運営</h2>
+<p class="note">当日の曲ごとの希望パートと、参加費の支払い状況をまとめて確認できます。会計チェックは管理者だけが操作できます。</p>
+<div id="daySessionSwitch" class="session-switch"></div>
+<div id="daySummary"></div>
+<div id="dayRequests"></div>
+<div id="dayAccounting"></div>
 </section>
 </div>
 </div>
@@ -228,11 +238,51 @@ window.deleteSession=async id=>{
  await reloadAll();
 };
 
+
+let daySessionId=null;
+function renderDaySessionButtons(){
+ const box=document.getElementById("daySessionSwitch"); if(!box)return; box.innerHTML="";
+ sessions.forEach(s=>{const b=document.createElement("button");b.type="button";b.className="tab"+(s.id===daySessionId?" active":"");b.textContent=s.name;b.onclick=()=>{daySessionId=s.id;renderDaySessionButtons();loadDay();};box.appendChild(b);});
+}
+async function loadDay(){
+ const reqBox=document.getElementById("dayRequests"), acctBox=document.getElementById("dayAccounting"), sumBox=document.getElementById("daySummary");
+ if(!daySessionId){daySessionId=sessions[0]?.id||null;renderDaySessionButtons();}
+ if(!daySessionId){sumBox.innerHTML='<div class="empty">セッションがありません。</div>';reqBox.innerHTML="";acctBox.innerHTML="";return;}
+ const session=sessions.find(x=>x.id===daySessionId); reqBox.innerHTML="読み込み中…";acctBox.innerHTML="";
+ const [rr,mm,aa]=await Promise.all([
+  client.from("part_requests").select("user_id,display_name,song_id,part").eq("session_id",daySessionId),
+  client.from("members").select("user_id,display_name,approved").eq("approved",true).order("display_name",{ascending:true}),
+  client.from("session_attendance").select("user_id,paid").eq("session_id",daySessionId)
+ ]);
+ if(rr.error){reqBox.innerHTML='<div class="error">パート希望を取得できませんでした。</div>';return}
+ if(aa.error){acctBox.innerHTML='<div class="error">会計機能の設定がまだ完了していません。付属の v3.1 SQL をSupabaseで実行してください。</div>';return}
+ const ids=sessionSongs.filter(x=>x.session_id===daySessionId).map(x=>x.song_id);
+ const currentSongs=songs.filter(x=>ids.includes(x.id));
+ const grouped={}; (rr.data||[]).forEach(x=>{const k=x.song_id+"|"+x.part;(grouped[k]??=[]).push(x.display_name||"メンバー")});
+ const uniqueUsers=[...new Map((rr.data||[]).map(x=>[x.user_id,x.display_name||"メンバー"]).filter(x=>x[0])).entries()];
+ const existing=new Map((aa.data||[]).map(x=>[x.user_id,x.paid]));
+ // 希望を出しているメンバーを当日の会計対象として自動登録
+ const missing=uniqueUsers.filter(([uid])=>!existing.has(uid));
+ if(missing.length){
+   const ins=await client.from("session_attendance").insert(missing.map(([user_id])=>({session_id:daySessionId,user_id,paid:false})));
+   if(!ins.error) missing.forEach(([uid])=>existing.set(uid,false));
+ }
+ const paidCount=uniqueUsers.filter(([uid])=>existing.get(uid)===true).length;
+ sumBox.innerHTML=`<div class="card"><div class="row"><div><div class="name">${esc(session.name)}</div><div class="meta">${formatDate(session.session_date)}</div></div><div style="text-align:right"><div class="name">参加費 ¥1,000</div><div class="meta">支払済み ${paidCount}人 / 対象 ${uniqueUsers.length}人</div></div></div></div>`;
+ reqBox.innerHTML=`<h3 style="margin:18px 0 8px;color:#283947">🎵 曲ごとの希望</h3>` + (currentSongs.length?currentSongs.map(song=>`<div class="card"><div class="name">${esc(song.title)}</div><div class="meta">${esc(song.artist)}</div><table><thead><tr><th>パート</th><th>希望者</th></tr></thead><tbody>${parts.map(part=>`<tr><td>${part}</td><td>${(grouped[song.id+"|"+part]||[]).map(esc).join("、")||"—"}</td></tr>`).join("")}</tbody></table></div>`).join(""):'<div class="empty">このセッションの課題曲はまだありません。</div>');
+ acctBox.innerHTML=`<h3 style="margin:18px 0 8px;color:#283947">💰 会計チェック（管理者のみ）</h3>`+(uniqueUsers.length?uniqueUsers.map(([uid,name])=>`<div class="card"><label style="display:flex;align-items:center;gap:10px;margin:0;font-size:15px;color:#303030"><input style="width:auto;transform:scale(1.2)" type="checkbox" ${existing.get(uid)?"checked":""} onchange="togglePaid('${esc(uid)}',this.checked)"><span>${esc(name)}</span><span style="margin-left:auto;font-size:12px;color:#777">${existing.get(uid)?"支払済み":"未払い"}</span></label></div>`).join(""):'<div class="empty">まだ希望パートを登録しているメンバーはいません。</div>');
+}
+window.togglePaid=async(uid,paid)=>{
+ const r=await client.from("session_attendance").upsert({session_id:daySessionId,user_id:uid,paid},{onConflict:"session_id,user_id"});
+ if(r.error){alert("会計状態を更新できませんでした");loadDay();return} loadDay();
+};
+
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
  b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");
  if(b.dataset.tab==="requests")renderRequestSessionButtons();
+ if(b.dataset.tab==="day"){daySessionId=daySessionId||sessions[0]?.id||null;renderDaySessionButtons();loadDay();}
 });
 boot();
 })();
