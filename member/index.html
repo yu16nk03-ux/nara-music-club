@@ -34,6 +34,7 @@
   </div>
   <div class="member-card"><h2>活動記録</h2><p><a href="./activity/">これまでの活動を見る</a></p></div>
   <button id="logout" class="logout" type="button">ログアウト</button>
+  <div id="adminLink" style="display:none;margin-top:16px;text-align:center"><a href="../admin/">⚙️ 運営管理画面</a></div>
 </section>
 <a class="back-link" href="../index.html">NMC公式サイトへ戻る</a>
 </main>
@@ -171,6 +172,7 @@
     if(!result.data){showStatus("ログインできました。現在、NMC運営で会員登録を確認しています。",false);return;}
     if(result.data.approved!==true){showStatus("現在、参加承認待ちです。運営が確認後、会員ページをご利用いただけます。",false);return;}
     showHome(result.data.display_name);
+    if(result.data.is_admin===true) document.getElementById("adminLink").style.display="block";
     await loadSongChoices(user);
   }
   loginBtn.addEventListener("click",async function(){
