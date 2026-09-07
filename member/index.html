@@ -8,19 +8,10 @@
 <style>
 .member-login{max-width:560px;margin:0 auto;padding:56px 20px 80px;text-align:center}
 .member-badge{display:inline-block;padding:6px 12px;border-radius:999px;background:#f1e4cf;letter-spacing:.12em;font-size:12px}
-.member-login h1{margin:18px 0 12px}
-.member-login p{line-height:1.9;color:#555}
+.member-login h1{margin:18px 0 12px}.member-login p{line-height:1.9;color:#555}
 .line-login{display:block;width:100%;margin:28px auto 14px;padding:15px 18px;border:0;border-radius:10px;background:#06c755;color:#fff;font-size:16px;font-weight:700;cursor:pointer}
-.line-login:disabled{opacity:.55}
-.login-note{font-size:12px;color:#777}
-.member-status{margin-top:24px;padding:16px;border-radius:10px;background:#faf7f1;display:none;line-height:1.8}
-.member-status.error{background:#fff0ee}
-.back-link{display:inline-block;margin-top:24px}
-.member-home{display:none;text-align:left;margin-top:28px}
-.member-card{background:#fff;border:1px solid #e8e0d6;border-radius:16px;padding:22px;margin-bottom:16px}
-.member-card h2{margin:0 0 12px;font-size:18px}
-.member-card p{margin:0;line-height:1.8}
-.logout{margin-top:18px;padding:12px 18px;border:1px solid #ddd;background:#fff;border-radius:10px}
+.line-login:disabled{opacity:.55}.login-note{font-size:12px;color:#777}.member-status{margin-top:24px;padding:16px;border-radius:10px;background:#faf7f1;display:none;line-height:1.8}.member-status.error{background:#fff0ee}.back-link{display:inline-block;margin-top:24px}
+.member-home{display:none;text-align:left;margin-top:28px}.member-card{background:#fff;border:1px solid #e8e0d6;border-radius:16px;padding:22px;margin-bottom:16px}.member-card h2{margin:0 0 12px;font-size:18px}.member-card p{margin:0;line-height:1.8}.logout{margin-top:18px;padding:12px 18px;border:1px solid #ddd;background:#fff;border-radius:10px}
 </style>
 </head>
 <body>
@@ -28,118 +19,56 @@
 <span class="member-badge">NMC MEMBER</span>
 <h1>メンバーページ</h1>
 <p id="intro">活動予定や曲・パートの希望、活動記録などを<br>メンバー限定で確認できます。</p>
-
-<button id="lineLogin" class="line-login">LINEでログイン</button>
+<button id="lineLogin" class="line-login" type="button">LINEでログイン</button>
 <div class="login-note">初回ログイン後、運営による承認が必要です。</div>
 <div id="status" class="member-status"></div>
-
 <section id="memberHome" class="member-home">
-  <div class="member-card">
-    <h2>こんにちは、<span id="displayName">メンバー</span>さん。</h2>
-    <p>ログインできました。NMC MEMBERへようこそ。</p>
-  </div>
-  <div class="member-card">
-    <h2>次回の活動</h2>
-    <p>決まり次第お知らせします。</p>
-  </div>
-  <div class="member-card">
-    <h2>活動記録</h2>
-    <p><a href="./activity/">これまでの活動を見る</a></p>
-  </div>
-  <button id="logout" class="logout">ログアウト</button>
+  <div class="member-card"><h2>こんにちは、<span id="displayName">メンバー</span>さん。</h2><p>ログインできました。NMC MEMBERへようこそ。</p></div>
+  <div class="member-card"><h2>次回の活動</h2><p>決まり次第お知らせします。</p></div>
+  <div class="member-card"><h2>活動記録</h2><p><a href="./activity/">これまでの活動を見る</a></p></div>
+  <button id="logout" class="logout" type="button">ログアウト</button>
 </section>
-
 <a class="back-link" href="../index.html">NMC公式サイトへ戻る</a>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const SUPABASE_URL="https://rxkofbwieizizpxmhqhq.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
-const statusEl=document.getElementById("status");
-const loginBtn=document.getElementById("lineLogin");
-const homeEl=document.getElementById("memberHome");
-const nameEl=document.getElementById("displayName");
-
-function showStatus(message,error=false){
-  statusEl.textContent=message;
-  statusEl.className="member-status"+(error?" error":"");
-  statusEl.style.display="block";
-}
-function hideLogin(){
-  loginBtn.style.display="none";
-  document.querySelector(".login-note").style.display="none";
-  homeEl.style.display="block";
-}
-function showLogin(){
-  loginBtn.style.display="block";
-  document.querySelector(".login-note").style.display="block";
-  homeEl.style.display="none";
-}
-const configured=!SUPABASE_URL.startsWith("YOUR_")&&!SUPABASE_PUBLISHABLE_KEY.startsWith("YOUR_");
-const supabase=configured?window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY):null;
-
-async function checkMember(){
-  if(!supabase){
-    showStatus("Supabaseの接続情報がまだ設定されていません。");
-    return;
+(function(){
+  const SUPABASE_URL="https://rxkofbwiejzizpxmhqhq.supabase.co";
+  const SUPABASE_PUBLISHABLE_KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
+  const REDIRECT_URL="https://yu16nk03-ux.github.io/nara-music-club/member/";
+  const statusEl=document.getElementById("status");
+  const loginBtn=document.getElementById("lineLogin");
+  const homeEl=document.getElementById("memberHome");
+  const nameEl=document.getElementById("displayName");
+  const noteEl=document.querySelector(".login-note");
+  function showStatus(message,error){statusEl.textContent=message;statusEl.className="member-status"+(error?" error":"");statusEl.style.display="block";}
+  function showLogin(){loginBtn.style.display="block";noteEl.style.display="block";homeEl.style.display="none";}
+  function showHome(name){loginBtn.style.display="none";noteEl.style.display="none";statusEl.style.display="none";nameEl.textContent=name||"メンバー";homeEl.style.display="block";}
+  if(!window.supabase||!window.supabase.createClient){showStatus("ログイン機能を読み込めませんでした。ページを再読み込みしてください。",true);return;}
+  const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+  async function checkMember(){
+    const {data,error}=await client.auth.getUser();
+    if(error){showLogin();return;}
+    const user=data.user;
+    if(!user){showLogin();return;}
+    const result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",user.id).maybeSingle();
+    if(result.error){showStatus("ログインはできましたが、会員情報を確認できませんでした。",true);return;}
+    if(!result.data){showStatus("ログインできました。現在、NMC運営で会員登録を確認しています。",false);return;}
+    if(result.data.approved!==true){showStatus("現在、参加承認待ちです。運営が確認後、会員ページをご利用いただけます。",false);return;}
+    showHome(result.data.display_name);
   }
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user){showLogin();return;}
-
-  const {data:member,error}=await supabase
-    .from("members")
-    .select("display_name,approved,is_admin")
-    .eq("user_id",user.id)
-    .maybeSingle();
-
-  if(error){
-    showStatus("会員情報を確認できませんでした。RLS設定を確認してください。",true);
-    return;
-  }
-  if(!member){
-    showStatus("会員情報がまだ登録されていません。NMC運営へご連絡ください。",true);
-    return;
-  }
-  if(!member.approved){
-    showStatus("現在、参加承認待ちです。運営が確認後、会員ページをご利用いただけます。");
-    return;
-  }
-
-  statusEl.style.display="none";
-  nameEl.textContent=member.display_name||"メンバー";
-  hideLogin();
-}
-
-loginBtn.addEventListener("click",async()=>{
-  if(!supabase){
-    showStatus("Supabaseの接続情報を設定すると、LINEログインを開始できます。");
-    return;
-  }
-  loginBtn.disabled=true;
-  showStatus("LINEへ移動します…");
-  const {error}=await supabase.auth.signInWithOAuth({
-    provider:"custom:line",
-    options:{redirectTo:window.location.origin+"/nara-music-club/member/"}
+  loginBtn.addEventListener("click",async function(){
+    loginBtn.disabled=true;showStatus("LINEへ移動します…",false);
+    try{
+      const {error}=await client.auth.signInWithOAuth({provider:"custom:line",options:{redirectTo:REDIRECT_URL}});
+      if(error){loginBtn.disabled=false;showStatus("LINEログインを開始できませんでした。",true);}
+    }catch(e){loginBtn.disabled=false;showStatus("LINEログインでエラーが発生しました。",true);console.error(e);}
   });
-  if(error){
-    loginBtn.disabled=false;
-    showStatus("ログインを開始できませんでした。",true);
-  }
-});
-
-document.getElementById("logout").addEventListener("click",async()=>{
-  if(supabase) await supabase.auth.signOut();
-  location.reload();
-});
-
-if(supabase){
-  supabase.auth.onAuthStateChange(()=>checkMember());
+  document.getElementById("logout").addEventListener("click",async function(){await client.auth.signOut();location.reload();});
+  client.auth.onAuthStateChange(function(){setTimeout(checkMember,0);});
   checkMember();
-}else{
-  loginBtn.disabled=true;
-  showStatus("このZIPにはまだSupabaseの接続情報が入っていません。");
-}
+})();
 </script>
 </body>
 </html>
