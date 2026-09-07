@@ -17,13 +17,17 @@ h2{font-size:20px;color:#283947;margin:0 0 8px}.note{font-size:13px;color:#777;l
 button{border:0;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer}.approve{background:#667b6d;color:#fff}.disable{background:#f2e9df;color:#725f50}.admin{background:#eee4d2;color:#5f4e3a}
 table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 6px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}th{color:#667;white-space:nowrap}
 .empty{padding:24px 8px;text-align:center;color:#888}.error{background:#fff0ee;color:#9a4c40;padding:12px;border-radius:10px;margin:10px 0}
-input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;background:#fff}label{font-size:12px;color:#666;display:block;margin:10px 0 5px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.save{margin-top:12px;background:#667b6d;color:#fff;width:100%}
-@media(max-width:600px){.form-grid{grid-template-columns:1fr}table{font-size:12px}}
+input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;background:#fff}label{font-size:12px;color:#666;display:block;margin:10px 0 5px}
+.form-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}.save{margin-top:12px;background:#667b6d;color:#fff;width:100%}
+.song-checks{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.song-check{display:flex;gap:8px;align-items:center;border:1px solid #e8e0d6;border-radius:10px;padding:10px;background:#fff}
+.song-check input{width:auto}.session-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.secondary{background:#eee8df;color:#66594d}
+.session-chip{display:inline-block;background:#e9dfcf;border-radius:999px;padding:5px 8px;font-size:11px;margin-right:6px}
+@media(max-width:600px){.form-grid,.song-checks{grid-template-columns:1fr}table{font-size:12px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="top"><div><span class="badge">NMC ADMIN</span><h1>運営管理画面</h1><p class="lead">メンバー承認と課題曲・パート希望を管理できます。</p></div><a href="../member/">← MEMBERへ</a></div>
+<div class="top"><div><span class="badge">NMC ADMIN</span><h1>運営管理画面</h1><p class="lead">メンバー承認、セッション別の課題曲・パート希望を管理できます。</p></div><a href="../member/">← MEMBERへ</a></div>
 <div id="status" class="error" style="display:none"></div>
 
 <div id="adminApp" style="display:none">
@@ -31,6 +35,7 @@ input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-ra
 <button class="tab active" data-tab="members">👥 メンバー承認</button>
 <button class="tab" data-tab="requests">🎵 パート希望</button>
 <button class="tab" data-tab="songs">🎼 課題曲管理</button>
+<button class="tab" data-tab="sessions">📅 セッション管理</button>
 </div>
 
 <section id="members" class="panel active">
@@ -39,20 +44,37 @@ input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-ra
 </section>
 
 <section id="requests" class="panel">
-<h2>🎵 パート希望一覧</h2><p class="note">パートは確定ではなく、現在の「希望者」の一覧です。同じパートに複数人いてOKです。</p>
+<h2>🎵 パート希望一覧</h2><p class="note">セッションごとに、パートは確定ではなく現在の「希望者」として確認できます。同じパートに複数人いてOKです。</p>
+<div id="requestSessionSwitch" class="session-switch"></div>
 <div id="requestList"></div>
 </section>
 
 <section id="songs" class="panel">
-<h2>🎼 課題曲管理</h2><p class="note">運営だけが課題曲を追加・変更できます。まずは現在の3曲を登録しています。</p>
+<h2>🎼 課題曲管理</h2><p class="note">運営だけが課題曲を追加・削除できます。課題曲そのものと、どのセッションで使うかは別々に管理します。</p>
 <form id="songForm">
 <div class="form-grid"><div><label>曲名</label><input id="songTitle" required></div><div><label>アーティスト</label><input id="songArtist" required></div></div>
 <button class="save" type="submit">課題曲を追加する</button>
 </form>
 <div id="songAdminList"></div>
 </section>
+
+<section id="sessions" class="panel">
+<h2>📅 セッション管理</h2>
+<p class="note">先のセッションも先に作成できます。曲が決まっているものだけ先に選択しておけば、メンバーはそのセッションの希望パートを事前に登録できます。</p>
+<form id="sessionForm">
+<div class="form-grid">
+<div><label>セッション名</label><input id="sessionName" placeholder="例：9月セッション" required></div>
+<div><label>開催日（任意）</label><input id="sessionDate" type="date"></div>
+</div>
+<label>このセッションの課題曲</label>
+<div id="sessionSongChecks" class="song-checks"></div>
+<button class="save" type="submit">セッションを作成する</button>
+</form>
+<div id="sessionAdminList"></div>
+</section>
 </div>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
@@ -61,15 +83,32 @@ const KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
 const client=window.supabase.createClient(SUPABASE_URL,KEY);
 const status=document.getElementById("status"),app=document.getElementById("adminApp");
 const parts=["ボーカル","ドラム","ベース","バッキングギター","リードギター","キーボード"];
+let songs=[],sessions=[],sessionSongs=[],requestSessionId=null;
+
 function err(m){status.textContent=m;status.style.display="block"}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function formatDate(date){if(!date)return "開催日未定";const d=new Date(date+"T00:00:00");return `${d.getMonth()+1}月${d.getDate()}日`}
+function sid(){return "session_"+Date.now()}
 
 async function boot(){
  const {data:{user},error}=await client.auth.getUser();
  if(error||!user){err("LINEログインが必要です。NMC MEMBERからログインしてください。");return}
  const r=await client.from("members").select("display_name,approved,is_admin").eq("user_id",user.id).maybeSingle();
  if(r.error||!r.data?.approved||!r.data?.is_admin){err("このページは承認済みの運営メンバーのみ利用できます。");return}
- app.style.display="block"; await Promise.all([loadMembers(),loadRequests(),loadSongs()]);
+ app.style.display="block";
+ await reloadAll();
+}
+async function reloadAll(){
+ const [s1,s2,s3]=await Promise.all([
+   client.from("songs").select("id,title,artist").order("created_at",{ascending:true}),
+   client.from("sessions").select("id,name,session_date,created_at").order("session_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true}),
+   client.from("session_songs").select("session_id,song_id")
+ ]);
+ if(s1.error||s2.error||s3.error){
+   err("セッション関連の設定がまだ完了していません。付属SQLをSupabaseで実行してください。");return
+ }
+ songs=s1.data||[];sessions=s2.data||[];sessionSongs=s3.data||[];
+ await Promise.all([loadMembers(),loadRequests(),loadSongs(),loadSessions()]);
 }
 async function loadMembers(){
  const box=document.getElementById("memberList"); box.innerHTML="読み込み中…";
@@ -84,27 +123,117 @@ async function loadMembers(){
 }
 window.setMember=async(id,v)=>{const r=await client.from("members").update({approved:v}).eq("id",id);if(r.error)alert("更新できませんでした");else loadMembers()}
 window.setAdmin=async(id,v)=>{if(!confirm("このメンバーを運営メンバーにしますか？"))return;const r=await client.from("members").update({is_admin:v}).eq("id",id);if(r.error)alert("更新できませんでした");else loadMembers()}
+
+function renderRequestSessionButtons(){
+ const box=document.getElementById("requestSessionSwitch");box.innerHTML="";
+ sessions.forEach(s=>{
+   const b=document.createElement("button");b.type="button";b.className="tab"+(s.id===requestSessionId?" active":"");
+   b.textContent=s.name;b.onclick=()=>{requestSessionId=s.id;renderRequestSessionButtons();loadRequests()};
+   box.appendChild(b);
+ });
+}
 async function loadRequests(){
- const box=document.getElementById("requestList");box.innerHTML="読み込み中…";
- const r=await client.from("part_requests").select("display_name,song_id,part").order("song_id").order("part");
+ const box=document.getElementById("requestList");
+ if(!requestSessionId){requestSessionId=sessions[0]?.id||null;renderRequestSessionButtons()}
+ if(!requestSessionId){box.innerHTML='<div class="empty">セッションがありません。</div>';return}
+ const session=sessions.find(s=>s.id===requestSessionId);
+ box.innerHTML="読み込み中…";
+ const r=await client.from("part_requests").select("display_name,song_id,part").eq("session_id",requestSessionId);
  if(r.error){box.innerHTML='<div class="error">パート希望を取得できませんでした。</div>';return}
- const songs={shishamo:["僕に彼女ができたんだ","SHISHAMO"],radwimps:["セプテンバーさん","RADWIMPS"],humpback:["拝啓、少年よ","Hump Back"]};
- const grouped={};r.data.forEach(x=>{const key=x.song_id+"|"+x.part;(grouped[key]??=[]).push(x.display_name||"メンバー")});
- box.innerHTML=Object.keys(songs).map(id=>`<div class="card"><div class="name">${songs[id][0]}</div><div class="meta">${songs[id][1]}</div><table><thead><tr><th>パート</th><th>希望者</th></tr></thead><tbody>${parts.map(p=>`<tr><td>${p}</td><td>${(grouped[id+"|"+p]||[]).map(esc).join("、")||"—"}</td></tr>`).join("")}</tbody></table></div>`).join("");
+ const ids=sessionSongs.filter(x=>x.session_id===requestSessionId).map(x=>x.song_id);
+ const currentSongs=songs.filter(s=>ids.includes(s.id));
+ const grouped={};(r.data||[]).forEach(x=>{const key=x.song_id+"|"+x.part;(grouped[key]??=[]).push(x.display_name||"メンバー")});
+ if(!currentSongs.length){box.innerHTML='<div class="empty">このセッションの課題曲はまだ設定されていません。</div>';return}
+ box.innerHTML=`<div class="card"><div class="name">${esc(session.name)}</div><div class="meta">${formatDate(session.session_date)}</div></div>`+
+ currentSongs.map(song=>`<div class="card"><div class="name">${esc(song.title)}</div><div class="meta">${esc(song.artist)}</div><table><thead><tr><th>パート</th><th>希望者</th></tr></thead><tbody>${parts.map(p=>`<tr><td>${p}</td><td>${(grouped[song.id+"|"+p]||[]).map(esc).join("、")||"—"}</td></tr>`).join("")}</tbody></table></div>`).join("");
 }
 async function loadSongs(){
  const box=document.getElementById("songAdminList");box.innerHTML="読み込み中…";
  const r=await client.from("songs").select("id,title,artist").order("created_at",{ascending:true});
- if(r.error){box.innerHTML='<div class="error">課題曲テーブルが未設定です。付属SQLを実行してください。</div>';return}
+ if(r.error){box.innerHTML='<div class="error">課題曲テーブルが未設定です。</div>';return}
  box.innerHTML=r.data.map(s=>`<div class="card"><div class="row"><div><div class="name">${esc(s.title)}</div><div class="meta">${esc(s.artist)}</div></div><button class="disable" onclick="deleteSong('${esc(s.id)}')">削除</button></div></div>`).join("")||'<div class="empty">課題曲はありません。</div>';
+ renderSessionSongChecks();
 }
+window.deleteSong=async id=>{if(!confirm("この課題曲を削除しますか？"))return;const r=await client.from("songs").delete().eq("id",id);if(r.error)alert("削除できませんでした");else reloadAll()}
+
 document.getElementById("songForm").addEventListener("submit",async e=>{
- e.preventDefault();const title=document.getElementById("songTitle").value.trim(),artist=document.getElementById("songArtist").value.trim();
- const id="song_"+Date.now();const r=await client.from("songs").insert({id,title,artist});
- if(r.error){alert("追加できませんでした");return}e.target.reset();loadSongs();
+ e.preventDefault();
+ const title=document.getElementById("songTitle").value.trim(),artist=document.getElementById("songArtist").value.trim();
+ const r=await client.from("songs").insert({id:"song_"+Date.now(),title,artist});
+ if(r.error){alert("追加できませんでした");return}
+ e.target.reset();reloadAll();
 });
-window.deleteSong=async id=>{if(!confirm("この課題曲を削除しますか？"))return;const r=await client.from("songs").delete().eq("id",id);if(r.error)alert("削除できませんでした");else loadSongs()}
-document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active")});
+
+function renderSessionSongChecks(){
+ const box=document.getElementById("sessionSongChecks");box.innerHTML="";
+ if(!songs.length){box.innerHTML='<div class="empty">先に課題曲を登録してください。</div>';return}
+ songs.forEach(s=>{
+   const label=document.createElement("label");label.className="song-check";
+   label.innerHTML=`<input type="checkbox" value="${esc(s.id)}"><span>${esc(s.title)}<small style="display:block;color:#777">${esc(s.artist)}</small></span>`;
+   box.appendChild(label);
+ });
+}
+document.getElementById("sessionForm").addEventListener("submit",async e=>{
+ e.preventDefault();
+ const name=document.getElementById("sessionName").value.trim();
+ const date=document.getElementById("sessionDate").value||null;
+ const chosen=[...document.querySelectorAll("#sessionSongChecks input:checked")].map(x=>x.value);
+ const id=sid();
+ const r=await client.from("sessions").insert({id,name,session_date:date});
+ if(r.error){alert("セッションを作成できませんでした");return}
+ if(chosen.length){
+   const rr=await client.from("session_songs").insert(chosen.map(song_id=>({session_id:id,song_id})));
+   if(rr.error){alert("セッションは作成されましたが、課題曲の設定に失敗しました。");}
+ }
+ e.target.reset();await reloadAll();
+});
+
+async function loadSessions(){
+ const box=document.getElementById("sessionAdminList");
+ if(!sessions.length){box.innerHTML='<div class="empty">まだセッションがありません。</div>';renderSessionSongChecks();return}
+ box.innerHTML=sessions.map(s=>{
+   const ids=sessionSongs.filter(x=>x.session_id===s.id).map(x=>x.song_id);
+   const names=songs.filter(x=>ids.includes(x.id)).map(x=>x.title);
+   return `<div class="card"><div class="name">${esc(s.name)}</div><div class="meta">${formatDate(s.session_date)}</div><div style="margin-top:8px">${names.length?names.map(n=>`<span class="session-chip">${esc(n)}</span>`).join(""):"<span class=\"meta\">課題曲未設定</span>"}</div><div class="session-actions"><button class="secondary" onclick="editSessionSongs('${esc(s.id)}')">課題曲を変更</button><button class="disable" onclick="deleteSession('${esc(s.id)}')">セッションを削除</button></div></div>`;
+ }).join("");
+}
+window.editSessionSongs=async id=>{
+ const session=sessions.find(s=>s.id===id); if(!session)return;
+ const current=new Set(sessionSongs.filter(x=>x.session_id===id).map(x=>x.song_id));
+ const html=songs.map(s=>`<label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input style="width:auto" type="checkbox" value="${esc(s.id)}" ${current.has(s.id)?"checked":""}> ${esc(s.title)} / ${esc(s.artist)}</label>`).join("");
+ const wrap=document.createElement("div");wrap.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20"><div style="background:#fff;border-radius:16px;padding:20px;max-width:560px;width:100%;max-height:80vh;overflow:auto"><h2>「${esc(session.name)}」の課題曲</h2>${html}<div class="session-actions"><button class="save" id="saveSessionSongs">保存</button><button class="secondary" id="cancelSessionSongs">キャンセル</button></div></div></div>`;
+ document.body.appendChild(wrap);
+ wrap.querySelector("#cancelSessionSongs").onclick=()=>wrap.remove();
+ wrap.querySelector("#saveSessionSongs").onclick=async()=>{
+   const chosen=[...wrap.querySelectorAll('input:checked')].map(x=>x.value);
+   const del=await client.from("session_songs").delete().eq("session_id",id);
+   if(del.error){alert("変更できませんでした");return}
+   if(chosen.length){
+     const ins=await client.from("session_songs").insert(chosen.map(song_id=>({session_id:id,song_id})));
+     if(ins.error){alert("課題曲を設定できませんでした");return}
+   }
+   wrap.remove();await reloadAll();
+ };
+};
+window.deleteSession=async id=>{
+ const session=sessions.find(s=>s.id===id);if(!session)return;
+ if(!confirm(`「${session.name}」を削除しますか？\nこのセッションの希望パートも見えなくなります。`))return;
+ const del1=await client.from("session_songs").delete().eq("session_id",id);
+ if(del1.error){alert("削除できませんでした");return}
+ const del2=await client.from("part_requests").delete().eq("session_id",id);
+ if(del2.error){alert("セッションは削除できましたが、希望パートの整理に失敗しました。");}
+ const del3=await client.from("sessions").delete().eq("id",id);
+ if(del3.error){alert("セッションを削除できませんでした");return}
+ if(requestSessionId===id)requestSessionId=null;
+ await reloadAll();
+};
+
+document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+ document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+ b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");
+ if(b.dataset.tab==="requests")renderRequestSessionButtons();
+});
 boot();
 })();
 </script>
