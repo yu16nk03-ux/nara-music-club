@@ -37,6 +37,7 @@ input,select{width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-ra
 <button class="tab" data-tab="songs">🎼 課題曲管理</button>
 <button class="tab" data-tab="sessions">📅 セッション管理</button>
 <button class="tab" data-tab="day">🎸 当日運営</button>
+<button class="tab" data-tab="activity">📸 活動記録</button>
 </div>
 
 <section id="members" class="panel active">
@@ -93,7 +94,7 @@ const KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
 const client=window.supabase.createClient(SUPABASE_URL,KEY);
 const status=document.getElementById("status"),app=document.getElementById("adminApp");
 const parts=["ボーカル","ドラム","ベース","バッキングギター","リードギター","キーボード"];
-let songs=[],sessions=[],sessionSongs=[],requestSessionId=null;
+let songs=[],sessions=[],sessionSongs=[],requestSessionId=null,activityRecords=[],activityPhotos=[];
 
 function err(m){status.textContent=m;status.style.display="block"}
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
@@ -118,7 +119,7 @@ async function reloadAll(){
    err("セッション関連の設定がまだ完了していません。付属SQLをSupabaseで実行してください。");return
  }
  songs=s1.data||[];sessions=s2.data||[];sessionSongs=s3.data||[];
- await Promise.all([loadMembers(),loadRequests(),loadSongs(),loadSessions()]);
+ await Promise.all([loadMembers(),loadRequests(),loadSongs(),loadSessions(),loadActivities()]);
 }
 async function loadMembers(){
  const box=document.getElementById("memberList"); box.innerHTML="読み込み中…";
@@ -277,12 +278,105 @@ window.togglePaid=async(uid,paid)=>{
  if(r.error){alert("会計状態を更新できませんでした");loadDay();return} loadDay();
 };
 
+
+function youtubeId(url){
+  try{
+    const u=new URL(url);
+    if(u.hostname.includes("youtu.be")) return u.pathname.replace("/","").split("/")[0];
+    if(u.hostname.includes("youtube.com")){
+      if(u.pathname==="/watch") return u.searchParams.get("v");
+      const m=u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/);
+      if(m) return m[1];
+    }
+  }catch(e){}
+  return null;
+}
+function youtubeEmbed(url){
+  const id=youtubeId(url);
+  return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+}
+async function loadActivities(){
+  const box=document.getElementById("activityAdminList"); if(!box)return;
+  const [ar,pr]=await Promise.all([
+    client.from("activity_records").select("id,session_id,memo,youtube_url,created_at"),
+    client.from("activity_photos").select("id,activity_id,photo_url").order("created_at",{ascending:true})
+  ]);
+  if(ar.error||pr.error){
+    box.innerHTML='<div class="error">活動記録の設定がまだ完了していません。付属の v3.2 SQL をSupabaseで実行してください。</div>'; return;
+  }
+  activityRecords=ar.data||[]; activityPhotos=pr.data||[];
+  if(!sessions.length){box.innerHTML='<div class="empty">先にセッションを作成してください。</div>';return;}
+  box.innerHTML=sessions.map(session=>{
+    const rec=activityRecords.find(x=>x.session_id===session.id);
+    const photos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
+    return `<div class="card">
+      <div class="row"><div><div class="name">${esc(session.name)}</div><div class="meta">${formatDate(session.session_date)}</div></div>
+      <button class="approve" onclick="editActivity('${esc(session.id)}')">${rec?"編集する":"記録を作成"}</button></div>
+      ${rec?`<div class="meta" style="margin-top:10px">${rec.memo?esc(rec.memo):"メモなし"}${rec.youtube_url?' ・ 🎥 動画あり':""} ・ 📸 ${photos.length}枚</div>`:'<div class="meta" style="margin-top:10px">まだ活動記録はありません。</div>'}
+    </div>`;
+  }).join("");
+}
+window.editActivity=async sessionId=>{
+  const session=sessions.find(x=>x.id===sessionId); if(!session)return;
+  const rec=activityRecords.find(x=>x.session_id===sessionId);
+  const currentPhotos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
+  const ids=sessionSongs.filter(x=>x.session_id===sessionId).map(x=>x.song_id);
+  const currentSongs=songs.filter(x=>ids.includes(x.id));
+  const wrap=document.createElement("div");
+  wrap.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:30">
+  <div style="background:#fff;border-radius:16px;padding:20px;max-width:650px;width:100%;max-height:88vh;overflow:auto">
+  <h2>📸 ${esc(session.name)}の活動記録</h2>
+  <div class="meta">開催日：${formatDate(session.session_date)}</div>
+  <label>演奏した曲</label>
+  <div class="card">${currentSongs.length?currentSongs.map(x=>`<div>${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join(""):'<span class="meta">このセッションに課題曲はありません。</span>'}</div>
+  <label>活動メモ</label><textarea id="activityMemo" style="width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;min-height:110px">${esc(rec?.memo||"")}</textarea>
+  <label>YouTube動画URL（限定公開推奨）</label><input id="activityYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx">
+  <label>写真を追加</label><input id="activityFiles" type="file" accept="image/*" multiple>
+  ${currentPhotos.length?`<label>現在の写真</label><div class="photo-grid">${currentPhotos.map(p=>`<div style="position:relative"><img src="${esc(p.photo_url)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px"><button class="disable" style="margin-top:5px;width:100%" onclick="deleteActivityPhoto('${esc(p.id)}','${esc(p.photo_url)}')">この写真を削除</button></div>`).join("")}</div>`:""}
+  <div class="session-actions"><button class="save" id="saveActivity">保存</button><button class="secondary" id="cancelActivity">キャンセル</button></div>
+  </div></div>`;
+  document.body.appendChild(wrap);
+  wrap.querySelector("#cancelActivity").onclick=()=>wrap.remove();
+  wrap.querySelector("#saveActivity").onclick=async()=>{
+    const btn=wrap.querySelector("#saveActivity");btn.disabled=true;btn.textContent="保存中…";
+    try{
+      let activityId=rec?.id||("activity_"+Date.now());
+      const memo=wrap.querySelector("#activityMemo").value.trim();
+      const youtube=wrap.querySelector("#activityYoutube").value.trim();
+      if(youtube && !youtubeEmbed(youtube)) throw new Error("YouTubeのURLを確認してください。");
+      let r;
+      if(rec) r=await client.from("activity_records").update({memo,youtube_url:youtube||null}).eq("id",activityId);
+      else r=await client.from("activity_records").insert({id:activityId,session_id:sessionId,memo,youtube_url:youtube||null});
+      if(r.error) throw r.error;
+      const files=[...wrap.querySelector("#activityFiles").files];
+      for(const file of files){
+        const path=`${sessionId}/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+        const up=await client.storage.from("nmc-activity").upload(path,file,{upsert:false});
+        if(up.error) throw up.error;
+        const pub=client.storage.from("nmc-activity").getPublicUrl(path).data.publicUrl;
+        const ins=await client.from("activity_photos").insert({id:"photo_"+Date.now()+"_"+Math.random().toString(36).slice(2),activity_id:activityId,photo_url:pub});
+        if(ins.error) throw ins.error;
+      }
+      wrap.remove();await loadActivities();alert("活動記録を保存しました！📸🎥");
+    }catch(e){console.error(e);alert("保存できませんでした。\\n"+(e.message||"Supabaseの設定を確認してください。"));btn.disabled=false;btn.textContent="保存";}
+  };
+};
+window.deleteActivityPhoto=async(id,url)=>{
+  if(!confirm("この写真を削除しますか？"))return;
+  const r=await client.from("activity_photos").delete().eq("id",id);
+  if(r.error){alert("削除できませんでした");return}
+  // Storage上の古いファイルは残しておきます（公開URLからは活動記録に表示されなくなります）。
+  document.querySelectorAll("button").forEach(b=>{if(b.textContent.includes("この写真を削除")){}});
+  await loadActivities();
+};
+
 document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>{
  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
  document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
  b.classList.add("active");document.getElementById(b.dataset.tab).classList.add("active");
  if(b.dataset.tab==="requests")renderRequestSessionButtons();
  if(b.dataset.tab==="day"){daySessionId=daySessionId||sessions[0]?.id||null;renderDaySessionButtons();loadDay();}
+ if(b.dataset.tab==="activity"){loadActivities();}
 });
 boot();
 })();
