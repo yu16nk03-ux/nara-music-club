@@ -25,3 +25,31 @@
 
 .public-live-events{display:grid;gap:12px}
 .public-live-loading{color:#777;text-align:center}
+
+/* v3.5 ホームページ調整 */
+.public-event-details{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-top:10px;
+}
+.public-event-detail{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  line-height:1.65;
+}
+.public-event-detail span{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.public-event-location span{
+  flex:1;
+}
+.message-body p{
+  margin:0 0 1.4em;
+}
+.message-body p:last-child{
+  margin-bottom:0;
+}

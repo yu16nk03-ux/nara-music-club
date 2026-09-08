@@ -53,10 +53,14 @@
       <div class="message-wrap">
         <p class="section-kicker">MESSAGE</p>
         <h2>Nara Music Clubからのメッセージ</h2>
-        <p>音楽は一人での練習や考える時間がほとんどで、基本的には孤独なものだと思います。故に辞めてしまったり、そもそもスタートラインに立つことさえも無かったりが多い気がします。</p>
-        <p>しかし誰かと合わさったときの感動は、何事にも変えがたいものとなります。それを知っている方にはもう一度が、知らない方にはあなたのこれからが生まれる場所になれば嬉しいです。</p>
-      </div>
-    </section>
+<div class="message-body">
+<p>音楽から一度離れてしまった人、続けてきた人、これから一歩踏み出す人、そういった一人一人が集まり、音を合わせた時の喜びや感動とは何ものにも代えがたいものです。</p>
+
+<p>私たちは、そんな「音を通じたつながり」を大切に、奈良で音楽を楽しめる場所をつくりたいと思っています。はじめての方も、久しぶりに楽器を手にした方も、それぞれのペースで気軽に参加していただけるよう、あたたかく迎えたいと思っています。</p>
+
+<p>音楽に詳しくなくても、うまくなくても大丈夫。<br>一緒に音を楽しみながら、あなたの「やってみたい」が新しい一歩につながる場所でありたい。<br>それが、Nara Music Clubの願いです。</p>
+</div>
+</section>
 
     <section class="section recommend">
       <div class="section-heading centered">
@@ -225,7 +229,11 @@
           <article class="event-card live-preview">
             <span class="event-status">${x.event_date ? "UPCOMING / EVENT" : "COMING SOON"}</span>
             <h3>${esc(x.title)}</h3>
-            <p>${fmtDate(x.event_date)}${x.start_time?" ・ 🕐 "+String(x.start_time).slice(0,5):""}${x.location?" ・ 📍 "+esc(x.location):""}</p>
+            <div class="public-event-details">
+              ${x.event_date?`<div class="public-event-detail">📅 <span>${fmtDate(x.event_date)}</span></div>`:""}
+              ${x.start_time?`<div class="public-event-detail">🕐 <span>${String(x.start_time).slice(0,5)}</span></div>`:""}
+              ${x.location?`<div class="public-event-detail public-event-location">📍 <span>${esc(x.location)}</span></div>`:""}
+            </div>
           </article>`).join("");
       }else{
         liveBox.innerHTML=`<article class="event-card live-preview">
