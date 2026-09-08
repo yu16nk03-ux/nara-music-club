@@ -58,6 +58,10 @@
     <h2>活動記録</h2>
     <p><a href="./activity/">これまでの活動を見る</a></p>
   </div>
+  <div class="member-card">
+    <h2>🎤 ライブ・出演情報</h2>
+    <p><a href="./live/">ライブや出演の記録を見る</a></p>
+  </div>
   <button id="logout" class="logout" type="button">ログアウト</button>
   <div id="adminLink" style="display:none;margin-top:16px;text-align:center"><a href="../admin/">⚙️ 運営管理画面</a></div>
 </section>
@@ -109,7 +113,7 @@
 
   async function loadSessionData(){
     const [sr,ssr,sngr]=await Promise.all([
-      client.from("sessions").select("id,name,session_date").order("session_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true}),
+      client.from("sessions").select("id,name,session_date,start_time,location").order("session_date",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true}),
       client.from("session_songs").select("session_id,song_id"),
       client.from("songs").select("id,title,artist").order("created_at",{ascending:true})
     ]);
@@ -141,9 +145,12 @@
     const meta=document.getElementById("sessionMeta");
     const content=document.getElementById("sessionContent");
     if(!session){content.innerHTML="";return;}
-    meta.textContent=session.session_date
-      ? `開催日：${formatDate(session.session_date)}${isClosed(session)?"　｜　回答受付終了":""}`
-      : "開催日は未定です。";
+    meta.textContent=(session.session_date
+      ? `開催日：${formatDate(session.session_date)}`
+      : "開催日は未定です。")
+      + (session.start_time ? `　｜　🕐 ${session.start_time.slice(0,5)}` : "")
+      + (session.location ? `　｜　📍 ${session.location}` : "")
+      + (isClosed(session) ? "　｜　回答受付終了" : "");
     content.innerHTML="読み込み中…";
 
     const ids=sessionSongs.filter(x=>x.session_id===sessionId).map(x=>x.song_id);
