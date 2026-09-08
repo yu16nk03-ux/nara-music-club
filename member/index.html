@@ -256,9 +256,31 @@
     const {data,error}=await client.auth.getUser();
     if(error||!data.user){showLogin();return;}
     currentUser=data.user;
-    const result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",currentUser.id).maybeSingle();
+    let result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",currentUser.id).maybeSingle();
     if(result.error){showStatus("ログインはできましたが、会員情報を確認できませんでした。",true);return;}
-    if(!result.data){showStatus("ログインできました。現在、NMC運営で会員登録を確認しています。",false);return;}
+
+    // 初回LINEログイン時は、membersへ自動登録して承認待ちにする
+    if(!result.data){
+      const meta=currentUser.user_metadata||{};
+      const displayName=meta.name||meta.full_name||meta.preferred_username||"LINEメンバー";
+      const insertResult=await client.from("members").insert({
+        user_id:currentUser.id,
+        display_name:displayName,
+        approved:false,
+        is_admin:false
+      });
+      if(insertResult.error){
+        console.error("members insert error:",insertResult.error);
+        showStatus("LINEログインはできましたが、会員登録を完了できませんでした。運営にご連絡ください。",true);
+        return;
+      }
+      result=await client.from("members").select("display_name,approved,is_admin").eq("user_id",currentUser.id).maybeSingle();
+      if(result.error||!result.data){
+        showStatus("会員登録は完了しましたが、登録情報を確認できませんでした。運営にご連絡ください。",true);
+        return;
+      }
+    }
+
     if(result.data.approved!==true){showStatus("現在、参加承認待ちです。運営が確認後、会員ページをご利用いただけます。",false);return;}
     showHome(result.data.display_name);
     if(result.data.is_admin===true) document.getElementById("adminLink").style.display="block";
