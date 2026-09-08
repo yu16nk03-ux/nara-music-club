@@ -26,3 +26,7 @@ https://www.instagram.com/nmc_official_2026/
 
 ## v3.2
 活動記録に写真・活動メモ・YouTube限定公開動画を追加しました。Supabaseで `NMC-v3.2-Supabase-activity.sql` を実行してください。
+
+
+## v3.6
+初回LINEログインしたユーザーをmembersへ自動登録し、運営の承認待ちにする修正です。Supabaseで `NMC-v3.6-Supabase-member-auto-registration.sql` を1回実行してください。
