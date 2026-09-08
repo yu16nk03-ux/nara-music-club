@@ -1,3 +1,5 @@
+NMC v3.4 — 管理画面修正版＋ホームページ自動連携
+
 # Nara Music Club Website v2.1
 
 Nara Music Clubのホームページ v2.1です。GitHub Pagesで公開できます。
