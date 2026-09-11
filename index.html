@@ -225,7 +225,10 @@
       }
 
       if(!lr.error && lr.data && lr.data.length){
-        liveBox.innerHTML=lr.data.map(x=>`
+        const today=new Date();
+        const todayKey=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+        const upcoming=(lr.data||[]).filter(x=>!x.event_date || x.event_date>=todayKey);
+        liveBox.innerHTML=upcoming.map(x=>`
           <article class="event-card live-preview">
             <span class="event-status">${x.event_date ? "UPCOMING / EVENT" : "COMING SOON"}</span>
             <h3>${esc(x.title)}</h3>
