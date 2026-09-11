@@ -349,13 +349,13 @@ async function loadActivities(){
     const photos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
     return `<div class="card">
       <div class="row"><div><div class="name">${esc(session.name)}</div><div class="meta">${formatDate(session.session_date)}${session.start_time?` ・ 🕐 ${session.start_time.slice(0,5)}`:""}${session.location?` ・ 📍 ${esc(session.location)}`:""}</div></div>
-      <button class="approve" onclick="editActivity('${esc(session.id)}')">${rec?"編集する":"記録を作成"}</button></div>
+      <div class="session-actions"><button class="approve" onclick="editActivity('${esc(session.id)}')">${rec?"編集する":"記録を作成"}</button>${rec?`<button class="disable" onclick="deleteActivityRecord('${esc(rec.id)}')">削除</button>`:""}</div></div>
       ${rec?`<div class="meta" style="margin-top:10px">${rec.memo?esc(rec.memo):"メモなし"}${rec.youtube_url?' ・ 🎥 動画あり':""} ・ 📸 ${photos.length}枚</div>`:'<div class="meta" style="margin-top:10px">まだ活動記録はありません。</div>'}
     </div>`;
   }).join("");
   const standaloneCards=standalone.map(rec=>{
     const photos=activityPhotos.filter(x=>x.activity_id===rec.id);
-    return `<div class="card"><div class="row"><div><div class="name">${esc(rec.activity_title||"過去の活動")}</div><div class="meta">${formatDate(rec.activity_date)}</div></div><button class="approve" onclick="editStandaloneActivity('${esc(rec.id)}')">編集する</button></div>
+    return `<div class="card"><div class="row"><div><div class="name">${esc(rec.activity_title||"過去の活動")}</div><div class="meta">${formatDate(rec.activity_date)}</div></div><div class="session-actions"><button class="approve" onclick="editStandaloneActivity('${esc(rec.id)}')">編集する</button><button class="disable" onclick="deleteActivityRecord('${esc(rec.id)}')">削除</button></div></div>
       <div class="meta" style="margin-top:10px">${rec.memo?esc(rec.memo):"メモなし"}${rec.youtube_url?' ・ 🎥 動画あり':""} ・ 📸 ${photos.length}枚</div></div>`;
   }).join("");
   box.innerHTML=`<div class="session-actions"><button class="save" onclick="editStandaloneActivity()">＋ 過去の活動を追加</button></div>
@@ -427,6 +427,16 @@ window.editStandaloneActivity=async id=>{
   const rec=id?activityRecords.find(x=>x.id===id):null;
   buildActivityModal({rec,standalone:true});
 };
+window.deleteActivityRecord=async id=>{
+  const rec=activityRecords.find(x=>x.id===id);
+  if(!rec)return;
+  if(!confirm("この活動記録を削除しますか？\n登録した写真も一覧から削除されます。"))return;
+  const rp=await client.from("activity_photos").delete().eq("activity_id",id);
+  if(rp.error){alert("写真情報を削除できませんでした");return}
+  const r=await client.from("activity_records").delete().eq("id",id);
+  if(r.error){alert("活動記録を削除できませんでした\n"+(r.error.message||""));return}
+  await loadActivities();
+};
 window.deleteActivityPhoto=async(id,url)=>{
   if(!confirm("この写真を削除しますか？"))return;
   const r=await client.from("activity_photos").delete().eq("id",id);
@@ -479,7 +489,7 @@ async function loadLiveEvents(){
  box.innerHTML=`<div class="session-actions"><button class="save" onclick="editLiveEvent()">＋ 出演情報を追加</button></div>`+
  (liveEvents.length?liveEvents.map(x=>{
   const ps=livePhotos.filter(p=>p.live_event_id===x.id);
-  return `<div class="card"><div class="row"><div><div class="name">${esc(x.title)}</div><div class="meta">${formatDate(x.event_date)}${x.start_time?" ・ 🕐 "+x.start_time.slice(0,5):""}${x.location?" ・ 📍 "+esc(x.location):""}</div></div><button class="approve" onclick="editLiveEvent('${esc(x.id)}')">編集する</button></div><div class="meta" style="margin-top:10px">${x.memo?esc(x.memo):"メモなし"}${x.youtube_url?" ・ 🎥 動画あり":""} ・ 📸 ${ps.length}枚</div></div>`;
+  return `<div class="card"><div class="row"><div><div class="name">${esc(x.title)}</div><div class="meta">${formatDate(x.event_date)}${x.start_time?" ・ 🕐 "+x.start_time.slice(0,5):""}${x.location?" ・ 📍 "+esc(x.location):""}</div></div><div class="session-actions"><button class="approve" onclick="editLiveEvent('${esc(x.id)}')">編集する</button><button class="disable" onclick="deleteLiveEvent('${esc(x.id)}')">削除</button></div></div><div class="meta" style="margin-top:10px">${x.memo?esc(x.memo):"メモなし"}${x.youtube_url?" ・ 🎥 動画あり":""} ・ 📸 ${ps.length}枚</div></div>`;
  }).join(""):'<div class="empty">まだ出演情報はありません。</div>');
 }
 window.editLiveEvent=async id=>{
@@ -518,6 +528,14 @@ window.editLiveEvent=async id=>{
    wrap.remove();await loadLiveEvents();alert("出演情報を保存しました！🎤📸🎥");
   }catch(e){alert("保存できませんでした。\\n"+(e.message||"Supabaseの設定を確認してください。"));btn.disabled=false;btn.textContent="保存";}
  };
+};
+window.deleteLiveEvent=async id=>{
+ if(!confirm("この出演情報を削除しますか？\n登録した写真も一覧から削除されます。"))return;
+ const rp=await client.from("live_event_photos").delete().eq("live_event_id",id);
+ if(rp.error){alert("写真情報を削除できませんでした");return}
+ const r=await client.from("live_events").delete().eq("id",id);
+ if(r.error){alert("出演情報を削除できませんでした\n"+(r.error.message||""));return}
+ await loadLiveEvents();
 };
 window.deleteLivePhoto=async id=>{
  if(!confirm("この写真を削除しますか？"))return;
