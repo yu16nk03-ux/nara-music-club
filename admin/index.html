@@ -145,11 +145,22 @@ async function loadMembers(){
  box.innerHTML=r.data.map(m=>`<div class="card"><div class="row"><div><div class="name">${esc(m.display_name||"名前未設定")}</div><div class="meta">${m.approved?"承認済み":"承認待ち"}${m.is_admin?" ・ 運営":""}</div></div><div>
  ${!m.approved?`<button class="approve" onclick="setMember(${m.id},true)">承認する</button>`:""}
  ${m.approved?`<button class="disable" onclick="setMember(${m.id},false)">承認を外す</button>`:""}
- ${!m.is_admin?`<button class="admin" onclick="setAdmin(${m.id},true)">運営にする</button>`:""}
+ ${!m.is_admin?`<button class="admin" onclick="setAdmin(${m.id},true)">運営にする</button>`:`<button class="disable" onclick="setAdmin(${m.id},false)">運営から外す</button>`}
  </div></div></div>`).join("");
 }
 window.setMember=async(id,v)=>{const r=await client.from("members").update({approved:v}).eq("id",id);if(r.error)alert("更新できませんでした");else loadMembers()}
-window.setAdmin=async(id,v)=>{if(!confirm("このメンバーを運営メンバーにしますか？"))return;const r=await client.from("members").update({is_admin:v}).eq("id",id);if(r.error)alert("更新できませんでした");else loadMembers()}
+window.setAdmin=async(id,v)=>{
+ if(v){
+   if(!confirm("このメンバーを運営メンバーにしますか？"))return;
+ }else{
+   const ar=await client.from("members").select("id").eq("approved",true).eq("is_admin",true);
+   if(ar.error){alert("運営人数を確認できませんでした");return;}
+   if((ar.data||[]).length<=1){alert("運営メンバーが0人にならないよう、最後の1人は運営から外せません。");return;}
+   if(!confirm("このメンバーを運営から外しますか？\n※会員承認はそのままで、運営権限だけ外れます。"))return;
+ }
+ const r=await client.from("members").update({is_admin:v}).eq("id",id);
+ if(r.error)alert("更新できませんでした");else loadMembers();
+}
 
 function renderRequestSessionButtons(){
  const box=document.getElementById("requestSessionSwitch");box.innerHTML="";
@@ -316,15 +327,15 @@ function youtubeEmbed(url){
 async function loadActivities(){
   const box=document.getElementById("activityAdminList"); if(!box)return;
   const [ar,pr]=await Promise.all([
-    client.from("activity_records").select("id,session_id,memo,youtube_url,created_at"),
+    client.from("activity_records").select("id,session_id,activity_date,activity_title,songs_text,memo,youtube_url,created_at").order("activity_date",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}),
     client.from("activity_photos").select("id,activity_id,photo_url").order("created_at",{ascending:true})
   ]);
   if(ar.error||pr.error){
-    box.innerHTML='<div class="error">活動記録の設定がまだ完了していません。付属の v3.2 SQL をSupabaseで実行してください。</div>'; return;
+    box.innerHTML='<div class="error">活動記録の設定がまだ完了していません。付属の v3.7 SQL をSupabaseで実行してください。</div>'; return;
   }
   activityRecords=ar.data||[]; activityPhotos=pr.data||[];
-  if(!sessions.length){box.innerHTML='<div class="empty">先にセッションを作成してください。</div>';return;}
-  box.innerHTML=sessions.map(session=>{
+  const standalone=activityRecords.filter(x=>!x.session_id);
+  const sessionCards=sessions.map(session=>{
     const rec=activityRecords.find(x=>x.session_id===session.id);
     const photos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
     return `<div class="card">
@@ -333,20 +344,28 @@ async function loadActivities(){
       ${rec?`<div class="meta" style="margin-top:10px">${rec.memo?esc(rec.memo):"メモなし"}${rec.youtube_url?' ・ 🎥 動画あり':""} ・ 📸 ${photos.length}枚</div>`:'<div class="meta" style="margin-top:10px">まだ活動記録はありません。</div>'}
     </div>`;
   }).join("");
+  const standaloneCards=standalone.map(rec=>{
+    const photos=activityPhotos.filter(x=>x.activity_id===rec.id);
+    return `<div class="card"><div class="row"><div><div class="name">${esc(rec.activity_title||"過去の活動")}</div><div class="meta">${formatDate(rec.activity_date)}</div></div><button class="approve" onclick="editStandaloneActivity('${esc(rec.id)}')">編集する</button></div>
+      <div class="meta" style="margin-top:10px">${rec.memo?esc(rec.memo):"メモなし"}${rec.youtube_url?' ・ 🎥 動画あり':""} ・ 📸 ${photos.length}枚</div></div>`;
+  }).join("");
+  box.innerHTML=`<div class="session-actions"><button class="save" onclick="editStandaloneActivity()">＋ 過去の活動を追加</button></div>
+    ${sessionCards}${standaloneCards?`<h3 style="margin:24px 0 8px;color:#283947">📚 セッション管理にない活動</h3>${standaloneCards}`:""}` || '<div class="empty">まだ活動記録はありません。</div>';
 }
-window.editActivity=async sessionId=>{
-  const session=sessions.find(x=>x.id===sessionId); if(!session)return;
-  const rec=activityRecords.find(x=>x.session_id===sessionId);
+function buildActivityModal({session=null,rec=null,standalone=false}={}){
   const currentPhotos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
-  const ids=sessionSongs.filter(x=>x.session_id===sessionId).map(x=>x.song_id);
+  const ids=session?sessionSongs.filter(x=>x.session_id===session.id).map(x=>x.song_id):[];
   const currentSongs=songs.filter(x=>ids.includes(x.id));
   const wrap=document.createElement("div");
+  const title=standalone?(rec?"活動記録を編集":"過去の活動を追加"):`${session.name}の活動記録`;
   wrap.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;padding:18px;z-index:30">
   <div style="background:#fff;border-radius:16px;padding:20px;max-width:650px;width:100%;max-height:88vh;overflow:auto">
-  <h2>📸 ${esc(session.name)}の活動記録</h2>
-  <div class="meta">開催日：${formatDate(session.session_date)}${session.start_time?` ・ 🕐 ${session.start_time.slice(0,5)}`:""}${session.location?` ・ 📍 ${esc(session.location)}`:""}</div>
+  <h2>📸 ${esc(title)}</h2>
+  ${standalone?`<label>活動名</label><input id="activityTitle" value="${esc(rec?.activity_title||"")}" placeholder="例：8月セッション">
+  <label>開催日</label><input id="activityDate" type="date" value="${esc(rec?.activity_date||"")}">
+  <label>演奏した曲</label><textarea id="activitySongs" style="width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;min-height:100px" placeholder="1行に1曲ずつ入力\n例：僕に彼女ができたんだ / SHISHAMO">${esc(rec?.songs_text||"")}</textarea>`:`<div class="meta">開催日：${formatDate(session.session_date)}${session.start_time?` ・ 🕐 ${session.start_time.slice(0,5)}`:""}${session.location?` ・ 📍 ${esc(session.location)}`:""}</div>
   <label>演奏した曲</label>
-  <div class="card">${currentSongs.length?currentSongs.map(x=>`<div>${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join(""):'<span class="meta">このセッションに課題曲はありません。</span>'}</div>
+  <div class="card">${currentSongs.length?currentSongs.map(x=>`<div>${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join(""):'<span class="meta">このセッションに課題曲はありません。</span>'}</div>`}
   <label>活動メモ</label><textarea id="activityMemo" style="width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;min-height:110px">${esc(rec?.memo||"")}</textarea>
   <label>YouTube動画URL（限定公開推奨）</label><input id="activityYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx">
   <label>写真を追加</label><input id="activityFiles" type="file" accept="image/*" multiple>
@@ -358,17 +377,28 @@ window.editActivity=async sessionId=>{
   wrap.querySelector("#saveActivity").onclick=async()=>{
     const btn=wrap.querySelector("#saveActivity");btn.disabled=true;btn.textContent="保存中…";
     try{
-      let activityId=rec?.id||("activity_"+Date.now());
       const memo=wrap.querySelector("#activityMemo").value.trim();
       const youtube=wrap.querySelector("#activityYoutube").value.trim();
       if(youtube && !youtubeEmbed(youtube)) throw new Error("YouTubeのURLを確認してください。");
+      let activityId=rec?.id||("activity_"+Date.now());
       let r;
-      if(rec) r=await client.from("activity_records").update({memo,youtube_url:youtube||null}).eq("id",activityId);
-      else r=await client.from("activity_records").insert({id:activityId,session_id:sessionId,memo,youtube_url:youtube||null});
+      if(standalone){
+        const activityTitle=wrap.querySelector("#activityTitle").value.trim();
+        const activityDate=wrap.querySelector("#activityDate").value||null;
+        const songsText=wrap.querySelector("#activitySongs").value.trim();
+        if(!activityTitle) throw new Error("活動名を入力してください。");
+        if(!activityDate) throw new Error("開催日を入力してください。");
+        if(rec) r=await client.from("activity_records").update({activity_date:activityDate,activity_title:activityTitle,songs_text:songsText||null,memo,youtube_url:youtube||null}).eq("id",activityId);
+        else r=await client.from("activity_records").insert({id:activityId,session_id:null,activity_date:activityDate,activity_title:activityTitle,songs_text:songsText||null,memo,youtube_url:youtube||null});
+      }else{
+        if(rec) r=await client.from("activity_records").update({memo,youtube_url:youtube||null}).eq("id",activityId);
+        else r=await client.from("activity_records").insert({id:activityId,session_id:session.id,memo,youtube_url:youtube||null});
+      }
       if(r.error) throw r.error;
       const files=[...wrap.querySelector("#activityFiles").files];
       for(const file of files){
-        const path=`${sessionId}/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
+        const folder=standalone?activityId:session.id;
+        const path=`${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name.replace(/[^a-zA-Z0-9._-]/g,"_")}`;
         const up=await client.storage.from("nmc-activity").upload(path,file,{upsert:false});
         if(up.error) throw up.error;
         const pub=client.storage.from("nmc-activity").getPublicUrl(path).data.publicUrl;
@@ -376,8 +406,17 @@ window.editActivity=async sessionId=>{
         if(ins.error) throw ins.error;
       }
       wrap.remove();await loadActivities();alert("活動記録を保存しました！📸🎥");
-    }catch(e){console.error(e);alert("保存できませんでした。\\n"+(e.message||"Supabaseの設定を確認してください。"));btn.disabled=false;btn.textContent="保存";}
+    }catch(e){console.error(e);alert("保存できませんでした。\n"+(e.message||"Supabaseの設定を確認してください。"));btn.disabled=false;btn.textContent="保存";}
   };
+}
+window.editActivity=async sessionId=>{
+  const session=sessions.find(x=>x.id===sessionId); if(!session)return;
+  const rec=activityRecords.find(x=>x.session_id===sessionId);
+  buildActivityModal({session,rec,standalone:false});
+};
+window.editStandaloneActivity=async id=>{
+  const rec=id?activityRecords.find(x=>x.id===id):null;
+  buildActivityModal({rec,standalone:true});
 };
 window.deleteActivityPhoto=async(id,url)=>{
   if(!confirm("この写真を削除しますか？"))return;
