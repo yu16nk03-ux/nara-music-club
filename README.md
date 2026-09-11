@@ -30,3 +30,6 @@ https://www.instagram.com/nmc_official_2026/
 
 ## v3.6
 初回LINEログインしたユーザーをmembersへ自動登録し、運営の承認待ちにする修正です。Supabaseで `NMC-v3.6-Supabase-member-auto-registration.sql` を1回実行してください。
+
+
+【v3.8】YouTubeの通常動画URLに加えて、YouTubeプレイリストURL（youtube.com/playlist?list=...）も活動記録・ライブ出演情報で登録・表示できるようにしました。

@@ -25,3 +25,6 @@
 ZIPの中身を、現在使っているGitHub Pagesリポジトリへ上書きアップロードしてください。
 
 既存の `images` フォルダや写真はそのまま残してください。
+
+
+【v3.8】YouTubeの通常動画URLに加えて、YouTubeプレイリストURL（youtube.com/playlist?list=...）も活動記録・ライブ出演情報で登録・表示できるようにしました。

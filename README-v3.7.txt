@@ -8,3 +8,6 @@ Nara Music Club v3.7
 ・セッション管理にない過去の活動を活動記録へ追加可能
 
 Supabaseで NMC-v3.7-Supabase-test-operation-fixes.sql を1回実行してください。
+
+
+【v3.8】YouTubeの通常動画URLに加えて、YouTubeプレイリストURL（youtube.com/playlist?list=...）も活動記録・ライブ出演情報で登録・表示できるようにしました。
