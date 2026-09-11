@@ -35,7 +35,17 @@ const status=document.getElementById("status"),box=document.getElementById("reco
 function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function fmt(d){if(!d)return "開催日未定";const x=new Date(d+"T00:00:00");return `${x.getFullYear()}年${x.getMonth()+1}月${x.getDate()}日`}
 function yt(url){
- try{const u=new URL(url);let id=null;if(u.hostname.includes("youtu.be"))id=u.pathname.slice(1).split("/")[0];else if(u.hostname.includes("youtube.com")){if(u.pathname==="/watch")id=u.searchParams.get("v");else{id=(u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)||[])[1]}}return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:null}catch(e){return null}
+ try{
+  const u=new URL(url),host=u.hostname.toLowerCase();
+  if(!host.includes("youtube.com")&&!host.includes("youtu.be"))return null;
+  const listId=u.searchParams.get("list");
+  if(listId)return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(listId)}`;
+  let id=null;
+  if(host.includes("youtu.be"))id=u.pathname.slice(1).split("/")[0];
+  else if(u.pathname==="/watch")id=u.searchParams.get("v");
+  else{id=(u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)||[])[1]}
+  return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:null;
+ }catch(e){return null}
 }
 async function boot(){
  const {data:{user},error}=await client.auth.getUser();
