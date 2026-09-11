@@ -308,21 +308,30 @@ window.togglePaid=async(uid,paid)=>{
 };
 
 
-function youtubeId(url){
+function youtubeEmbed(url){
   try{
     const u=new URL(url);
-    if(u.hostname.includes("youtu.be")) return u.pathname.replace("/","").split("/")[0];
-    if(u.hostname.includes("youtube.com")){
-      if(u.pathname==="/watch") return u.searchParams.get("v");
-      const m=u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/);
-      if(m) return m[1];
+    const host=u.hostname.toLowerCase();
+    if(!host.includes("youtube.com") && !host.includes("youtu.be")) return null;
+
+    // プレイリストURL：youtube.com/playlist?list=... など
+    const listId=u.searchParams.get("list");
+    if(listId){
+      return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(listId)}`;
     }
-  }catch(e){}
-  return null;
-}
-function youtubeEmbed(url){
-  const id=youtubeId(url);
-  return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+
+    // 通常の動画URL
+    let id=null;
+    if(host.includes("youtu.be")) id=u.pathname.replace(/^\//,"").split("/")[0];
+    else if(u.pathname==="/watch") id=u.searchParams.get("v");
+    else {
+      const m=u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/);
+      if(m) id=m[1];
+    }
+    return id ? `https://www.youtube.com/embed/${encodeURIComponent(id)}` : null;
+  }catch(e){
+    return null;
+  }
 }
 async function loadActivities(){
   const box=document.getElementById("activityAdminList"); if(!box)return;
@@ -367,7 +376,7 @@ function buildActivityModal({session=null,rec=null,standalone=false}={}){
   <label>演奏した曲</label>
   <div class="card">${currentSongs.length?currentSongs.map(x=>`<div>${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join(""):'<span class="meta">このセッションに課題曲はありません。</span>'}</div>`}
   <label>活動メモ</label><textarea id="activityMemo" style="width:100%;box-sizing:border-box;border:1px solid #ddd5ca;border-radius:9px;padding:11px;min-height:110px">${esc(rec?.memo||"")}</textarea>
-  <label>YouTube動画URL（限定公開推奨）</label><input id="activityYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx">
+  <label>YouTube動画・プレイリストURL（限定公開推奨）</label><input id="activityYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx / https://youtube.com/playlist?list=xxxxx">
   <label>写真を追加</label><input id="activityFiles" type="file" accept="image/*" multiple>
   ${currentPhotos.length?`<label>現在の写真</label><div class="photo-grid">${currentPhotos.map(p=>`<div style="position:relative"><img src="${esc(p.photo_url)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px"><button class="disable" style="margin-top:5px;width:100%" onclick="deleteActivityPhoto('${esc(p.id)}','${esc(p.photo_url)}')">この写真を削除</button></div>`).join("")}</div>`:""}
   <div class="session-actions"><button class="save" id="saveActivity">保存</button><button class="secondary" id="cancelActivity">キャンセル</button></div>
@@ -483,7 +492,7 @@ window.editLiveEvent=async id=>{
  <label>開始時刻</label><input id="liveTime" type="time" value="${esc(rec?.start_time?rec.start_time.slice(0,5):"")}">
  <label>場所</label><input id="liveLocation" value="${esc(rec?.location||"")}" placeholder="例：○○ホール">
  <label>活動メモ</label><textarea id="liveMemo" style="width:100%;box-sizing:border-box;min-height:100px">${esc(rec?.memo||"")}</textarea>
- <label>YouTube動画URL（限定公開推奨）</label><input id="liveYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx">
+ <label>YouTube動画・プレイリストURL（限定公開推奨）</label><input id="liveYoutube" value="${esc(rec?.youtube_url||"")}" placeholder="https://youtu.be/xxxxx">
  <label>写真を追加</label><input id="liveFiles" type="file" accept="image/*" multiple>
  ${ps.length?`<label>現在の写真</label><div class="photo-grid">${ps.map(p=>`<div><img src="${esc(p.photo_url)}" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px"><button class="disable" style="margin-top:5px;width:100%" onclick="deleteLivePhoto('${esc(p.id)}')">この写真を削除</button></div>`).join("")}</div>`:""}
  <div class="session-actions"><button class="save" id="saveLive">保存</button><button class="secondary" id="cancelLive">キャンセル</button></div>
