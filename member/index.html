@@ -121,7 +121,16 @@
       showStatus("セッション情報を読み込めませんでした。Supabaseの設定を確認してください。",true);
       return;
     }
-    sessions=sr.data||[]; sessionSongs=ssr.data||[]; songs=sngr.data||[];
+    // 開催日を過ぎたセッションはメンバー画面の選択肢から非表示
+    // 開催日未定のセッションは表示する
+    const today=new Date();
+    today.setHours(0,0,0,0);
+    sessions=(sr.data||[]).filter(s=>{
+      if(!s.session_date) return true;
+      const d=new Date(s.session_date+"T00:00:00");
+      return d>=today;
+    });
+    sessionSongs=ssr.data||[]; songs=sngr.data||[];
     if(!selectedSessionId || !sessions.some(s=>s.id===selectedSessionId)) selectedSessionId=sessions[0]?.id||null;
     renderSessionButtons();
     if(selectedSessionId) await renderSession(selectedSessionId);
