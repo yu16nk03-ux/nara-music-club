@@ -43,7 +43,7 @@ async function boot(){
  const mr=await client.from("members").select("approved").eq("user_id",user.id).maybeSingle();
  if(mr.error||!mr.data?.approved){status.textContent="承認済みメンバーのみ活動記録を閲覧できます。";status.style.display="block";box.innerHTML="";return}
  const [ar,sr,ss,sg,pr]=await Promise.all([
-  client.from("activity_records").select("id,session_id,memo,youtube_url,created_at"),
+  client.from("activity_records").select("id,session_id,activity_date,activity_title,songs_text,memo,youtube_url,created_at"),
   client.from("sessions").select("id,name,session_date").order("session_date",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}),
   client.from("session_songs").select("session_id,song_id"),
   client.from("songs").select("id,title,artist"),
@@ -53,15 +53,19 @@ async function boot(){
  const records=ar.data||[],sessions=sr.data||[],links=ss.data||[],songs=sg.data||[],photos=pr.data||[];
  if(!records.length){box.innerHTML='<div class="empty">まだ活動記録はありません。</div>';return}
  box.innerHTML=records.map(rec=>{
-  const ses=sessions.find(x=>x.id===rec.session_id); if(!ses)return "";
-  const ids=links.filter(x=>x.session_id===ses.id).map(x=>x.song_id);
+  const ses=rec.session_id?sessions.find(x=>x.id===rec.session_id):null;
+  const date=rec.activity_date||ses?.session_date||null;
+  const title=rec.activity_title||ses?.name||"活動記録";
+  const ids=ses?links.filter(x=>x.session_id===ses.id).map(x=>x.song_id):[];
   const cs=songs.filter(x=>ids.includes(x.id));
+  const manualSongs=(rec.songs_text||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
   const ps=photos.filter(x=>x.activity_id===rec.id);
   const video=yt(rec.youtube_url);
-  return `<article class="card"><div class="meta">${fmt(ses.session_date)}</div><h2 style="color:#283947;margin:7px 0">${esc(ses.name)}</h2>
-  <h3>🎵 演奏した曲</h3>${cs.length?cs.map(x=>`<div class="song">${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join(""):'<div class="meta">記録なし</div>'}
+  const songHtml=cs.length?cs.map(x=>`<div class="song">${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join("") : (manualSongs.length?manualSongs.map(x=>`<div class="song">${esc(x)}</div>`).join(""):'<div class="meta">記録なし</div>');
+  return `<article class="card"><div class="meta">${fmt(date)}</div><h2 style="color:#283947;margin:7px 0">${esc(title)}</h2>
+  <h3>🎵 演奏した曲</h3>${songHtml}
   ${ps.length?`<h3>📸 写真</h3><div class="photo-grid">${ps.map(p=>`<img src="${esc(p.photo_url)}" alt="活動写真" loading="lazy">`).join("")}</div>`:""}
-  ${video?`<h3>🎥 演奏動画</h3><div class="video"><iframe src="${video}" title="${esc(ses.name)} 演奏動画" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`:""}
+  ${video?`<h3>🎥 演奏動画</h3><div class="video"><iframe src="${video}" title="${esc(title)} 演奏動画" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>`:""}
   ${rec.memo?`<h3>📝 活動メモ</h3><div class="memo">${esc(rec.memo)}</div>`:""}
   </article>`;
  }).join("")||'<div class="empty">まだ活動記録はありません。</div>';
