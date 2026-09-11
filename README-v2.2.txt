@@ -1,4 +1,4 @@
-Nara Music Club v2.3
+Nara Music Circle v2.3
 - 「何かのきっかけを」をサイトから削除
 - 「活動記録」を追加
 - 「ライブ・出演情報」を追加

@@ -1,8 +1,8 @@
 NMC v3.4 — 管理画面修正版＋ホームページ自動連携
 
-# Nara Music Club Website v2.1
+# Nara Music Circle Website v2.1
 
-Nara Music Clubのホームページ v2.1です。GitHub Pagesで公開できます。
+Nara Music Circleのホームページ v2.1です。GitHub Pagesで公開できます。
 
 ## アップロード
 リポジトリ直下に `index.html`、`style.css`、`script.js`、`images`、`member` を配置してください。

@@ -1,4 +1,4 @@
-Nara Music Club v3.7
+Nara Music Circle v3.7
 
 テスト運営後の改善版です。
 
