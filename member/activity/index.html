@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>活動記録 | Nara Music Club</title>
+<link rel="stylesheet" href="../../style.css">
+<style>
+body{background:#fbfaf7;color:#303030}.wrap{max-width:900px;margin:auto;padding:36px 18px 70px}
+.badge{display:inline-block;background:#e9dfcf;padding:7px 13px;border-radius:999px;font-size:11px;letter-spacing:.14em;color:#53665b}
+h1{font-size:30px;margin:16px 0 8px;color:#283947}.lead{color:#666;line-height:1.8}
+.card{background:#fff;border:1px solid #e8e0d6;border-radius:16px;padding:18px;margin:14px 0}
+.meta{font-size:12px;color:#777}.song{padding:8px 0;border-bottom:1px solid #eee}.song:last-child{border-bottom:0}
+.memo{line-height:1.9;white-space:pre-wrap}.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.photo-grid img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;cursor:pointer}.photo-more{display:block;width:100%;margin-top:10px;padding:11px 14px;border:1px solid #d8cdbd;border-radius:10px;background:#f8f4ed;color:#53665b;font-weight:700}.yt-link{display:block;margin:10px 0 14px;padding:11px 14px;border-radius:10px;background:#f8f4ed;color:#53665b;text-decoration:none;font-weight:700;text-align:center}.gallery-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;padding:58px 12px 20px;overflow:auto}.gallery-close{position:fixed;right:14px;top:14px;width:42px;height:42px;border:0;border-radius:50%;background:#fff;color:#333;font-size:24px;z-index:10000}.gallery-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-width:900px;margin:auto}.gallery-grid img{width:100%;border-radius:8px;display:block}
+
+.empty{padding:28px;text-align:center;color:#888}.error{background:#fff0ee;color:#9a4c40;padding:12px;border-radius:10px}
+.back{display:inline-block;margin-top:16px;color:#53665b}
+@media(max-width:600px){.photo-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<span class="badge">ACTIVITY RECORD</span>
+<h1>活動記録</h1>
+<p class="lead">Nara Music Clubで過ごした時間を、少しずつ。</p>
+<div id="status" class="error" style="display:none"></div>
+<div id="records">読み込み中…</div>
+<div id="galleryModal" class="gallery-modal" aria-hidden="true"><button class="gallery-close" onclick="closeGallery()" aria-label="閉じる">×</button><div id="galleryGrid" class="gallery-grid"></div></div>
+<a class="back" href="../">← メンバー画面へ戻る</a>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+const SUPABASE_URL="https://rxkofbwiejzizpxmhqhq.supabase.co",KEY="sb_publishable_tBV97tu7ri1jsDp3-HZoJQ_tTtrDnBy";
+const client=window.supabase.createClient(SUPABASE_URL,KEY);
+const status=document.getElementById("status"),box=document.getElementById("records");
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function fmt(d){if(!d)return "開催日未定";const x=new Date(d+"T00:00:00");return `${x.getFullYear()}年${x.getMonth()+1}月${x.getDate()}日`}
+function yt(url){
+ try{
+  const u=new URL(url),host=u.hostname.toLowerCase();
+  if(!host.includes("youtube.com")&&!host.includes("youtu.be"))return null;
+  const listId=u.searchParams.get("list");
+  if(listId)return `https://www.youtube.com/embed/videoseries?list=${encodeURIComponent(listId)}`;
+  let id=null;
+  if(host.includes("youtu.be"))id=u.pathname.slice(1).split("/")[0];
+  else if(u.pathname==="/watch")id=u.searchParams.get("v");
+  else{id=(u.pathname.match(/\/(?:embed|shorts)\/([^/?]+)/)||[])[1]}
+  return id?`https://www.youtube.com/embed/${encodeURIComponent(id)}`:null;
+ }catch(e){return null}
+}
+async function boot(){
+ const {data:{user},error}=await client.auth.getUser();
+ if(error||!user){location.href="../";return}
+ const mr=await client.from("members").select("approved").eq("user_id",user.id).maybeSingle();
+ if(mr.error||!mr.data?.approved){status.textContent="承認済みメンバーのみ活動記録を閲覧できます。";status.style.display="block";box.innerHTML="";return}
+ const [ar,sr,ss,sg,pr]=await Promise.all([
+  client.from("activity_records").select("id,session_id,activity_date,activity_title,songs_text,memo,youtube_url,created_at"),
+  client.from("sessions").select("id,name,session_date").order("session_date",{ascending:false,nullsFirst:false}).order("created_at",{ascending:false}),
+  client.from("session_songs").select("session_id,song_id"),
+  client.from("songs").select("id,title,artist"),
+  client.from("activity_photos").select("id,activity_id,photo_url").order("created_at",{ascending:true})
+ ]);
+ if(ar.error||sr.error||ss.error||sg.error||pr.error){box.innerHTML='<div class="error">活動記録を読み込めませんでした。Supabaseの設定を確認してください。</div>';return}
+ const sessions=sr.data||[],links=ss.data||[],songs=sg.data||[],photos=pr.data||[];
+ const records=(ar.data||[]).slice().sort((a,b)=>{
+  const da=a.activity_date||sessions.find(x=>x.id===a.session_id)?.session_date||"";
+  const db=b.activity_date||sessions.find(x=>x.id===b.session_id)?.session_date||"";
+  if(da!==db) return db.localeCompare(da);
+  return (b.created_at||"").localeCompare(a.created_at||"");
+ });
+ if(!records.length){box.innerHTML='<div class="empty">まだ活動記録はありません。</div>';return}
+ box.innerHTML=records.map(rec=>{
+  const ses=rec.session_id?sessions.find(x=>x.id===rec.session_id):null;
+  const date=rec.activity_date||ses?.session_date||null;
+  const title=rec.activity_title||ses?.name||"活動記録";
+  const ids=ses?links.filter(x=>x.session_id===ses.id).map(x=>x.song_id):[];
+  const cs=songs.filter(x=>ids.includes(x.id));
+  const manualSongs=(rec.songs_text||"").split(/\n+/).map(x=>x.trim()).filter(Boolean);
+  const ps=photos.filter(x=>x.activity_id===rec.id);
+  const video=yt(rec.youtube_url);
+  const songHtml=cs.length?cs.map(x=>`<div class="song">${esc(x.title)} <span class="meta">/ ${esc(x.artist)}</span></div>`).join("") : (manualSongs.length?manualSongs.map(x=>`<div class="song">${esc(x)}</div>`).join(""):'<div class="meta">記録なし</div>');
+  return `<article class="card"><div class="meta">${fmt(date)}</div><h2 style="color:#283947;margin:7px 0">${esc(title)}</h2>
+  <h3>🎵 演奏した曲</h3>${songHtml}
+  ${ps.length?`<h3>📸 写真</h3><div class="photo-grid">${ps.slice(0,4).map((p,i)=>`<img src="${esc(p.photo_url)}" alt="活動写真" loading="lazy" onclick="openGallery(${JSON.stringify(ps.map(x=>x.photo_url))})">`).join("")}</div><button class="photo-more" onclick="openGallery(${JSON.stringify(ps.map(x=>x.photo_url))})">📷 写真をすべて見る（${ps.length}枚）</button>`:""}
+  ${video?`<h3>🎥 演奏動画</h3><a class="yt-link" href="${esc(rec.youtube_url)}" target="_blank" rel="noopener">▶ YouTubeで動画・プレイリストを見る</a>`:""}
+  ${rec.memo?`<h3>📝 活動メモ</h3><div class="memo">${esc(rec.memo)}</div>`:""}
+  </article>`;
+ }).join("")||'<div class="empty">まだ活動記録はありません。</div>';
+}
+window.openGallery=function(urls){const m=document.getElementById("galleryModal"),g=document.getElementById("galleryGrid");g.innerHTML=(urls||[]).map(u=>`<img src="${esc(u)}" alt="活動写真" loading="lazy">`).join("");m.style.display="block";m.setAttribute("aria-hidden","false");document.body.style.overflow="hidden"};
+window.closeGallery=function(){const m=document.getElementById("galleryModal");m.style.display="none";m.setAttribute("aria-hidden","true");document.body.style.overflow=""};
+document.getElementById("galleryModal").addEventListener("click",function(e){if(e.target===this)closeGallery()});
+boot();
+})();
+</script>
+</body>
+</html>
