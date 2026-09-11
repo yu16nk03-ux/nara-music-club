@@ -162,9 +162,17 @@ window.setAdmin=async(id,v)=>{
  if(r.error)alert("更新できませんでした");else loadMembers();
 }
 
+function isPastSession(session){
+ const today=new Date();
+ const y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,"0"),d=String(today.getDate()).padStart(2,"0");
+ const todayStr=`${y}-${m}-${d}`;
+ return !!session?.session_date && session.session_date < todayStr;
+}
+function activeSessions(){ return sessions.filter(s=>!isPastSession(s)); }
+
 function renderRequestSessionButtons(){
  const box=document.getElementById("requestSessionSwitch");box.innerHTML="";
- sessions.forEach(s=>{
+ activeSessions().forEach(s=>{
    const b=document.createElement("button");b.type="button";b.className="tab"+(s.id===requestSessionId?" active":"");
    b.textContent=s.name;b.onclick=()=>{requestSessionId=s.id;renderRequestSessionButtons();loadRequests()};
    box.appendChild(b);
@@ -172,7 +180,8 @@ function renderRequestSessionButtons(){
 }
 async function loadRequests(){
  const box=document.getElementById("requestList");
- if(!requestSessionId){requestSessionId=sessions[0]?.id||null;renderRequestSessionButtons()}
+ const available=activeSessions();
+ if(!requestSessionId || isPastSession(sessions.find(s=>s.id===requestSessionId))){requestSessionId=available[0]?.id||null;renderRequestSessionButtons()}
  if(!requestSessionId){box.innerHTML='<div class="empty">セッションがありません。</div>';return}
  const session=sessions.find(s=>s.id===requestSessionId);
  box.innerHTML="読み込み中…";
@@ -272,7 +281,7 @@ window.deleteSession=async id=>{
 let daySessionId=null;
 function renderDaySessionButtons(){
  const box=document.getElementById("daySessionSwitch"); if(!box)return; box.innerHTML="";
- sessions.forEach(s=>{const b=document.createElement("button");b.type="button";b.className="tab"+(s.id===daySessionId?" active":"");b.textContent=s.name;b.onclick=()=>{daySessionId=s.id;renderDaySessionButtons();loadDay();};box.appendChild(b);});
+ activeSessions().forEach(s=>{const b=document.createElement("button");b.type="button";b.className="tab"+(s.id===daySessionId?" active":"");b.textContent=s.name;b.onclick=()=>{daySessionId=s.id;renderDaySessionButtons();loadDay();};box.appendChild(b);});
 }
 async function loadDay(){
  const reqBox=document.getElementById("dayRequests"), acctBox=document.getElementById("dayAccounting"), sumBox=document.getElementById("daySummary");
@@ -344,8 +353,12 @@ async function loadActivities(){
   }
   activityRecords=ar.data||[]; activityPhotos=pr.data||[];
   const standalone=activityRecords.filter(x=>!x.session_id);
-  const sessionCards=sessions.map(session=>{
-    const rec=activityRecords.find(x=>x.session_id===session.id);
+  const sessionEntries=sessions.map(session=>({session,rec:activityRecords.find(x=>x.session_id===session.id)}))
+    .sort((a,b)=>{
+      const ad=a.session.session_date||"0000-00-00", bd=b.session.session_date||"0000-00-00";
+      return bd.localeCompare(ad) || String(b.session.created_at||"").localeCompare(String(a.session.created_at||""));
+    });
+  const sessionCards=sessionEntries.map(({session,rec})=>{
     const photos=rec?activityPhotos.filter(x=>x.activity_id===rec.id):[];
     return `<div class="card">
       <div class="row"><div><div class="name">${esc(session.name)}</div><div class="meta">${formatDate(session.session_date)}${session.start_time?` ・ 🕐 ${session.start_time.slice(0,5)}`:""}${session.location?` ・ 📍 ${esc(session.location)}`:""}</div></div>
